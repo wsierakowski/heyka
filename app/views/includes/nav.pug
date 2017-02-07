@@ -1,0 +1,20 @@
+header.navbar.navbar-inverse.navbar-fixed-top.bs-docs-nav(role="banner")
+  .container
+    .navbar-header
+      button.navbar-toggle(type="button", data-toggle="collapse" data-target=".bs-navbar-collapse")
+        span.sr-only Toggle navigation
+        span.icon-bar
+        span.icon-bar
+        span.icon-bar
+      //- a.navbar-brand.logo-link(href='/')
+      a.logo-link(href=myUtils.getUrl(urls.blog))
+        img(src=myUtils.getUrl(urls.blog, "images/sigman.pl.png"), alt=title)
+    nav.collapse.navbar-collapse.bs-navbar-collapse(role="navigation")
+      form.navbar-form.navbar-right(role="search", method="get", action=myUtils.getUrl(urls.blog))
+        .form-group
+          input(type="text", name="search" class="form-control input-sm", placeholder="Search")
+        button(type="submit", class="btn btn-default btn-sm") Search
+      ul.nav.navbar-nav
+        each link in navLinks
+          li(class=(section == link.key ? 'active' : null)): a(href=link.href)= link.label
+  #nav-btm-line

@@ -1,0 +1,15 @@
+extends layout.pug
+include mixins/article-renderer
+
+block content
+	.container: .row
+		.col-sm-8.col-md-9
+			ul.pager: li.previous: a(href=myUtils.getUrl(urls.blog)) &lt; Back to the blog
+			//- hr
+			if !data.post
+				h2 Invalid Post.
+			else
+				+render-article(false, data.post)
+			ul.pager: li.previous: a(href=myUtils.getUrl(urls.blog)) &lt; Back to the blog
+		.col-sm-4.col-md-3
+			include includes/side-panels

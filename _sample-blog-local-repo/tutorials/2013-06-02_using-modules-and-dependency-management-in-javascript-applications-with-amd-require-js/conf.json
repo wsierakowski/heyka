@@ -1,0 +1,15 @@
+{
+  "author": {
+    "name": "sigman"
+  },
+  "category": "tutorials",
+  "content": {
+    "brief": "brief.html",
+    "extended": "extended.html",
+    "extendedType": "html"
+  },
+  "publishedDate": "2013-06-02T23:00:00.000+0000",
+  "state": "published",
+  "tags": ["programming", "javascript"],
+  "title": "Using modules and dependency management in JavaScript applications with AMD - require.js"
+}

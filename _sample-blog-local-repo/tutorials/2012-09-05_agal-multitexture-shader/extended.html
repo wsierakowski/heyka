@@ -1,0 +1,154 @@
+<div class=\"recycle\">Article imported from <em>http://sierakowski.eu/list-of-tips/113-agal-multitexture-shader.html</em></div>
+\r\n<p style=\"text-align: justify;\">So here is the shader itself. The original GLSL source is available here under the 'multitexture' name: <a href=\"http://www.iquilezles.org/apps/shadertoy/\">http://www.iquilezles.org/apps/shadertoy/</a></p>\r\n
+<p>
+  <object style=\"vertical-align: middle;\" data=\"http://sierakowski.eu/examples/shader_multitexture/multitexture_shader.swf\" type=\"application/x-shockwave-flash\" width=\"550\" height=\"400\">
+  <param name=\"src\" value=\"http://sierakowski.eu/examples/shader_multitexture/multitexture_shader.swf\" />
+  <param name=\"wmode\" value=\"direct\" />
+  \r\n</object>
+</p>
+\r\n
+<p>&nbsp;</p>
+\r\n<p style=\"text-align: justify;\">As always the most difficult are the initial steps. To get started I advise to read an article from Adobe explaining what the AGAL is, what are Vertex and Fragment programs, registers, available op-codes and AGALMiniAssembler: <a href=\"http://www.adobe.com/devnet/flashplayer/articles/what-is-agal.html\">http://www.adobe.com/devnet/flashplayer/articles/what-is-agal.html</a>. This article is not comprehensive enough and leaves you with many questions and unfortunately I couldn't find any additional information on Adobe websites explaining AGAL in greater detail. Anyway it is good enough to get you started. Additional handy information about registers could be found here: <a href=\"http://www.saltgames.com/2011/agal-registers/\">http://www.saltgames.com/2011/agal-registers/</a></p>\r\n<p style=\"text-align: justify;\">So now when you know all the basics and want to try creating some shaders based on one of many of the GLSL examples available on internet, read a great article from Devon_O on his blog: <a href=\"http://blog.onebyonedesign.com/actionscript/learning-agal-with-agalmacroassembler-and-opengl-examples/\">http://blog.onebyonedesign.com/actionscript/learning-agal-with-agalmacroassembler-and-opengl-examples/</a>. If you read it attentively, you shouldn't have any problems understanding it as it guides you step by step how to do it.</p>\r\n<p style=\"text-align: justify;\">Just to make it easier to get the whole picture of the registers and the way how to populate them from ActionScript level, take a look at the figure below. [Update: <a href=\"http://sierakowski.eu/examples/agal/agal_cheatsheet.pdf\" target=\"_blank\">here is a pdf version</a>]</p>\r\n
+<p><img src=\"http://sierakowski.eu/examples/shader_multitexture/agal_graph_thumb.jpg\" alt=\"Agal_Graph\" /></p>
+\r\n
+<p>Also take a look at these images from the Adobe article listing all available opcodes:</p>
+\r\n
+<p><a class=\"jcepopup\" href=\"http://sierakowski.eu/examples/shader_multitexture/fig01.agal_opcodes.jpg\" target=\"_blank\"><img src=\"http://sierakowski.eu/examples/shader_multitexture/fig01.agal_opcodes_thumb.jpg\" alt=\"AGAL opcodes 1\" /></a></p>
+\r\n
+<p><a class=\"jcepopup\" href=\"http://sierakowski.eu/examples/shader_multitexture/fig02.agal_opcodes.jpg\" target=\"_blank\"><img src=\"http://sierakowski.eu/examples/shader_multitexture/fig02.agal_opcodes_thumb.jpg\" alt=\"AGAL opcodes 2\" /></a></p>
+\r\n<p style=\"text-align: justify;\">And here is the shader itself, I left the comments so you can easily find out how I got there (if you carefully followed instructions given by Devon).</p>\r\n
+<div class=\"rj_insertcode\">
+  \r\n
+  <div class=\"rj_insertcode_actionscript3\">
+    \r\n<table class=\"actionscript3\" style=\"border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;\">\r\n
+    <tbody>
+      \r\n
+      <tr class=\"li1\">\r\n<td style=\"width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;\">\r\n<pre style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\">1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10\r\n11\r\n12\r\n13\r\n14\r\n15\r\n16\r\n17\r\n18\r\n19\r\n20\r\n21\r\n22\r\n23\r\n24\r\n25\r\n26\r\n27\r\n28\r\n29\r\n30\r\n31\r\n32\r\n33\r\n34\r\n35\r\n36\r\n37\r\n38\r\n39\r\n40\r\n41\r\n42\r\n43\r\n44\r\n45\r\n46\r\n47\r\n48\r\n49\r\n50\r\n51\r\n52\r\n53\r\n54\r\n55\r\n56\r\n57\r\n58\r\n59\r\n60\r\n61\r\n62\r\n63\r\n64\r\n65\r\n66\r\n67\r\n68\r\n69\r\n70\r\n71\r\n72\r\n73\r\n74\r\n75\r\n76\r\n</pre>\r\n</td>\r\n<td style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\">\r\n<pre style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\"><span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">/*</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">//GLSL: /////////////////////////////////////////////////////////</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    // a rotozoom</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    vec2 cst = vec2( cos(.5*time), sin(.5*time) );</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    mat2 rot = 0.5*cst.x*mat2(cst.x,-cst.y,cst.y,cst.x);</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    vec3 col1 = texture2D(tex0,rot*p).xyz;</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    // scroll</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    vec3 col2 = texture2D(tex1,0.5*p+sin(0.1*time)).xyz;</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    // blend layers</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    vec3 col = col2*col1;</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">    gl_FragColor = vec4(col,1.0);</span></span>\r\n    \r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">//CONSTANTS: ////////////////////////////////////////////////////</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">  fc0 = [ 1, 1, 1, 1 ]</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">  fc1 = [ .5 * mTime, .1 * mTime, 2, 0 ]</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">  fc2 = [ sin(.5 * mTime), cos(.5 * mTime), sin(.1 * mTime), .5 ]</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">/////////////////////////////////////////////////////////////////</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #3f5fbf;\">*/</span>  </span>\r\n \r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//Step 1: ft1 = vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;</span></span>\r\n<span style=\"vertical-align: top;\">mov ft1, v0</span>\r\n<span style=\"vertical-align: top;\">mul ft1.xy, ft1.xy, fc1.z</span>\r\n<span style=\"vertical-align: top;\">div ft1.xy, ft1.xy, fc0.xy</span>\r\n<span style=\"vertical-align: top;\">sub ft1.xy, ft1.xy, fc0.<span style=\"color: #004993;\">x</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//Step2: ft2 = vec2 cst = vec2( cos(.5*time), sin(.5*time) );</span></span>\r\n<span style=\"vertical-align: top;\">mov ft2.<span style=\"color: #004993;\">x</span>, fc2.<span style=\"color: #004993;\">y</span></span>\r\n<span style=\"vertical-align: top;\">mov ft2.<span style=\"color: #004993;\">y</span>, fc2.<span style=\"color: #004993;\">x</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//Step3: ft3 = mat2 rot = 0.5*cst.x*mat2(cst.x,-cst.y,cst.y,cst.x);</span></span>\r\n<span style=\"vertical-align: top;\">mov ft0.<span style=\"color: #004993;\">x</span>, fc2.w</span>\r\n<span style=\"vertical-align: top;\">mul ft0.<span style=\"color: #004993;\">x</span>, ft0.<span style=\"color: #004993;\">x</span>, ft2.<span style=\"color: #004993;\">x</span></span>\r\n \r\n<span style=\"vertical-align: top;\">mov ft3.<span style=\"color: #004993;\">x</span>, ft2.<span style=\"color: #004993;\">x</span></span>\r\n<span style=\"vertical-align: top;\">mul ft3.<span style=\"color: #004993;\">x</span>, ft3.<span style=\"color: #004993;\">x</span>, ft0.<span style=\"color: #004993;\">x</span></span>\r\n \r\n<span style=\"vertical-align: top;\">mov ft3.<span style=\"color: #004993;\">y</span>, fc1.w</span>\r\n<span style=\"vertical-align: top;\">sub ft3.<span style=\"color: #004993;\">y</span>, ft3.<span style=\"color: #004993;\">y</span>, ft2.<span style=\"color: #004993;\">y</span></span>\r\n<span style=\"vertical-align: top;\">mul ft3.<span style=\"color: #004993;\">y</span>, ft3.<span style=\"color: #004993;\">y</span>, ft0.<span style=\"color: #004993;\">x</span></span>\r\n \r\n<span style=\"vertical-align: top;\">mov ft3.z, ft2.<span style=\"color: #004993;\">y</span></span>\r\n<span style=\"vertical-align: top;\">mul ft3.z, ft3.z, ft0.<span style=\"color: #004993;\">x</span></span>\r\n \r\n<span style=\"vertical-align: top;\">mov ft3.w, ft2.<span style=\"color: #004993;\">x</span></span>\r\n<span style=\"vertical-align: top;\">mul ft3.w, ft3.w, ft0.<span style=\"color: #004993;\">x</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//Step4: ft4 = rot * p</span></span>\r\n<span style=\"vertical-align: top;\">mul ft0.<span style=\"color: #004993;\">x</span>, ft3.<span style=\"color: #004993;\">x</span>, ft1.<span style=\"color: #004993;\">x</span></span>\r\n<span style=\"vertical-align: top;\">mul ft0.<span style=\"color: #004993;\">y</span>, ft3.<span style=\"color: #004993;\">y</span>, ft1.<span style=\"color: #004993;\">y</span></span>\r\n<span style=\"vertical-align: top;\">mul ft0.z, ft3.z, ft1.<span style=\"color: #004993;\">x</span></span>\r\n<span style=\"vertical-align: top;\">mul ft0.w, ft3.w, ft1.<span style=\"color: #004993;\">y</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #004993;\">add</span> ft4.<span style=\"color: #004993;\">x</span>, ft0.<span style=\"color: #004993;\">x</span>, ft0.<span style=\"color: #004993;\">y</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #004993;\">add</span> ft4.<span style=\"color: #004993;\">y</span>, ft0.z, ft0.w</span>\r\n<span style=\"vertical-align: top;\">mov ft4.zw, fc0.zw</span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//Step5: ft5 = vec3 col1 = texture2D(tex0,rot*p).xyz;</span></span>\r\n<span style=\"vertical-align: top;\">tex ft5, ft4, fs0<span style=\"color: #000000; font-weight: bold;\">&lt;</span>2d, repeat, linear, nomip<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//Step6: ft6 = vec3 col2 = texture2D(tex1,0.5*p+sin(0.1*time)).xyz;</span></span>\r\n<span style=\"vertical-align: top;\">mov ft0, fc0</span>\r\n<span style=\"vertical-align: top;\">mul ft0, ft1, fc2.w</span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #004993;\">add</span> ft0, ft0, fc2.z</span>\r\n<span style=\"vertical-align: top;\">tex ft6, ft0, fs1<span style=\"color: #000000; font-weight: bold;\">&lt;</span>2d, repeat, linear, nomip<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//Step7 ft7 = vec3 col = col2*col1;</span></span>\r\n<span style=\"vertical-align: top;\">mul ft7, ft6, ft5</span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//Step8 gl_FragColor = vec4(col,1.0);</span></span>\r\n<span style=\"vertical-align: top;\">mov oc, ft7</span></pre>\r\n</td>\r\n</tr>
+      \r\n
+    </tbody>
+    \r\n</table>\r\n
+  </div>
+  \r\n
+</div>
+\r\n
+<p>&nbsp;</p>
+\r\n
+<p>Constants are uploaded to registers in onTick method:</p>
+\r\n
+<div class=\"rj_insertcode\">
+  \r\n
+  <div class=\"rj_insertcode_actionscript3\">
+    \r\n<table class=\"actionscript3\" style=\"border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;\">\r\n
+    <tbody>
+      \r\n
+      <tr class=\"li1\">\r\n<td style=\"width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;\">\r\n<pre style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\">1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10\r\n11\r\n12\r\n13\r\n14\r\n15\r\n16\r\n17\r\n18\r\n19\r\n20\r\n21\r\n22\r\n23\r\n24\r\n25\r\n26\r\n27\r\n28\r\n</pre>\r\n</td>\r\n<td style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\">\r\n<pre style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\"><span style=\"vertical-align: top;\"><span style=\"color: #0033ff; font-weight: bold;\">if</span> <span style=\"color: #000000;\">(</span> <span style=\"color: #000000; font-weight: bold;\">!</span>mContext3d <span style=\"color: #000000;\">)</span> <span style=\"color: #0033ff; font-weight: bold;\">return</span>;</span>\r\n \r\n<span style=\"vertical-align: top;\">mContext3d.<span style=\"color: #004993;\">clear</span> <span style=\"color: #000000;\">(</span> <span style=\"color: #000000; font-weight: bold;\">0</span>, <span style=\"color: #000000; font-weight: bold;\">0</span>, <span style=\"color: #000000; font-weight: bold;\">0</span>, <span style=\"color: #000000; font-weight: bold;\">1</span> <span style=\"color: #000000;\">)</span>;</span>\r\n \r\n<span style=\"vertical-align: top;\">mContext3d.setProgramConstantsFromMatrix<span style=\"color: #000000;\">(</span></span>\r\n<span style=\"vertical-align: top;\">  Context3DProgramType.VERTEX, <span style=\"color: #000000; font-weight: bold;\">0</span>, mMatrix, <span style=\"color: #0033ff; font-weight: bold;\">true</span><span style=\"color: #000000;\">)</span>;</span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//fc0 = [ 1, 1, 1, 1 ]</span></span>\r\n<span style=\"vertical-align: top;\">mContext3d.setProgramConstantsFromVector<span style=\"color: #000000;\">(</span></span>\r\n<span style=\"vertical-align: top;\">  Context3DProgramType.FRAGMENT, <span style=\"color: #000000; font-weight: bold;\">0</span>, Vector.<span style=\"color: #000000; font-weight: bold;\">&lt;</span>Number<span style=\"color: #000000; font-weight: bold;\">&gt;</span><span style=\"color: #000000;\">(</span> <span style=\"color: #000000;\">[</span> <span style=\"color: #000000; font-weight: bold;\">1</span>, <span style=\"color: #000000; font-weight: bold;\">1</span>, <span style=\"color: #000000; font-weight: bold;\">1</span>, <span style=\"color: #000000; font-weight: bold;\">1</span> <span style=\"color: #000000;\">]</span><span style=\"color: #000000;\">)</span> <span style=\"color: #000000;\">)</span>;</span>\r\n \r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//fc1 = [ .5 * mTime, .1 * mTime, 2, 0 ]</span></span>\r\n<span style=\"vertical-align: top;\">mContext3d.setProgramConstantsFromVector<span style=\"color: #000000;\">(</span></span>\r\n<span style=\"vertical-align: top;\">  Context3DProgramType.FRAGMENT, <span style=\"color: #000000; font-weight: bold;\">1</span>, Vector.<span style=\"color: #000000; font-weight: bold;\">&lt;</span>Number<span style=\"color: #000000; font-weight: bold;\">&gt;</span><span style=\"color: #000000;\">(</span> <span style=\"color: #000000;\">[</span> .5 <span style=\"color: #000000; font-weight: bold;\">*</span> mTime, .1 <span style=\"color: #000000; font-weight: bold;\">*</span> mTime, <span style=\"color: #000000; font-weight: bold;\">2</span>, <span style=\"color: #000000; font-weight: bold;\">0</span> <span style=\"color: #000000;\">]</span><span style=\"color: #000000;\">)</span> <span style=\"color: #000000;\">)</span>;</span>\r\n \r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//fc2 = [ sin(.5 * mTime), cos(.5 * mTime), sin(.1 * mTime), .5 ]</span></span>\r\n<span style=\"vertical-align: top;\">mContext3d.setProgramConstantsFromVector<span style=\"color: #000000;\">(</span></span>\r\n<span style=\"vertical-align: top;\">  Context3DProgramType.FRAGMENT, <span style=\"color: #000000; font-weight: bold;\">2</span>, </span>\r\n<span style=\"vertical-align: top;\">  Vector.<span style=\"color: #000000; font-weight: bold;\">&lt;</span>Number<span style=\"color: #000000; font-weight: bold;\">&gt;</span><span style=\"color: #000000;\">(</span> <span style=\"color: #000000;\">[</span> <a href=\"http://www.google.com/search?q=math%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:math.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">Math</span></a>.<span style=\"color: #004993;\">sin</span><span style=\"color: #000000;\">(</span>.5 <span style=\"color: #000000; font-weight: bold;\">*</span> mTime<span style=\"color: #000000;\">)</span>, </span>\r\n<span style=\"vertical-align: top;\">  <a href=\"http://www.google.com/search?q=math%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:math.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">Math</span></a>.<span style=\"color: #004993;\">cos</span><span style=\"color: #000000;\">(</span>.5 <span style=\"color: #000000; font-weight: bold;\">*</span> mTime<span style=\"color: #000000;\">)</span>, <a href=\"http://www.google.com/search?q=math%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:math.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">Math</span></a>.<span style=\"color: #004993;\">sin</span><span style=\"color: #000000;\">(</span>.1 <span style=\"color: #000000; font-weight: bold;\">*</span> mTime<span style=\"color: #000000;\">)</span>, .5 <span style=\"color: #000000;\">]</span><span style=\"color: #000000;\">)</span> <span style=\"color: #000000;\">)</span>;</span>\r\n \r\n \r\n<span style=\"vertical-align: top;\">mContext3d.drawTriangles<span style=\"color: #000000;\">(</span>mIndexBuffer<span style=\"color: #000000;\">)</span>;</span>\r\n<span style=\"vertical-align: top;\">mContext3d.present<span style=\"color: #000000;\">(</span><span style=\"color: #000000;\">)</span>;</span>\r\n \r\n<span style=\"vertical-align: top;\">mTime <span style=\"color: #000000; font-weight: bold;\">+</span>= .025;</span></pre>\r\n</td>\r\n</tr>
+      \r\n
+    </tbody>
+    \r\n</table>\r\n
+  </div>
+  \r\n
+</div>
+\r\n
+<p>&nbsp;</p>
+\r\n
+<p class=\"download\">The full source code is available on wondefl (but doesn't work for no obvious reason): <a href=\"http://wonderfl.net/c/xZs3\">http://wonderfl.net/c/xZs3</a></p>
+\r\n
+<p class=\"download\">or on the GitHub: <a href=\"https://github.com/wsierakowski/stage3d/blob/master/shader-multitexture/Main.as\">https://github.com/wsierakowski/stage3d/blob/master/shader-multitexture/Main.as</a></p>
+\r\n
+<p>&nbsp;</p>
+\r\n
+<p>â€‹</p>
+\r\n
+<div id=\"jc\">
+  \r\n
+  <div id=\"comments\">
+    \r\n
+    <h4>Comments imported from the original article @sierakowski.eu</h4>
+    \r\n
+    <div id=\"comments-list\" class=\"comments-list\">
+      \r\n
+      <div id=\"comment-item-190\" class=\"even\">
+        \r\n
+        <div class=\"rbox\">
+          \r\n
+          <div class=\"rbox_tr\">
+            \r\n
+            <div class=\"rbox_tl\">
+              \r\n
+              <div class=\"rbox_t\">&nbsp;</div>
+              \r\n
+            </div>
+            \r\n
+          </div>
+          \r\n
+          <div class=\"rbox_m\">
+            \r\n
+            <div class=\"comment-box usertype-guest\">
+              <span class=\"comments-vote\"> <span id=\"comment-vote-holder-189\"> <a class=\"vote-good\" title=\"Good comment!\">+</a><a class=\"vote-poor\" title=\"Poor comment!\">-</a> <span class=\"vote-none\">0</span> </span> </span> <a class=\"comment-anchor\">#2</a> <span class=\"comment-author\">wojciech</span> <span class=\"comment-date\">2012-09-19 21:53</span>\r\n
+              <div id=\"comment-body-190\" class=\"comment-body\">No problem, just added a link to it in the article.</div>
+              \r\n<span class=\"comments-buttons\"> <a>Quote</a> </span>
+            </div>
+            \r\n
+            <div class=\"clear\">&nbsp;</div>
+            \r\n
+          </div>
+          \r\n
+          <div class=\"rbox_br\">
+            \r\n
+            <div class=\"rbox_bl\">
+              \r\n
+              <div class=\"rbox_b\">&nbsp;</div>
+              \r\n
+            </div>
+            \r\n
+          </div>
+          \r\n
+        </div>
+        \r\n
+      </div>
+      \r\n
+      <div id=\"comment-item-190\" class=\"even\">
+        \r\n
+        <div class=\"rbox\">
+          \r\n
+          <div class=\"rbox_tr\">
+            \r\n
+            <div class=\"rbox_tl\">
+              \r\n
+              <div class=\"rbox_t\">&nbsp;</div>
+              \r\n
+            </div>
+            \r\n
+          </div>
+          \r\n
+          <div class=\"rbox_m\">
+            \r\n
+            <div class=\"comment-box usertype-guest\">
+              <span class=\"comments-vote\"> <span id=\"comment-vote-holder-189\"> <a class=\"vote-good\" title=\"Good comment!\">+</a><a class=\"vote-poor\" title=\"Poor comment!\">-</a> <span class=\"vote-none\">0</span> </span> </span> <a class=\"comment-anchor\">#1</a> <span class=\"comment-author\">Carbon</span> <span class=\"comment-date\">2012-09-19 21:40</span>\r\n
+              <div id=\"comment-body-190\" class=\"comment-body\">Hey, would you be able to share the hires version of the AGAL image so I can print it and stick it on my wall? Thanks in advance.</div>
+              \r\n<span class=\"comments-buttons\"> <a>Quote</a> </span>
+            </div>
+            \r\n
+            <div class=\"clear\">&nbsp;</div>
+            \r\n
+          </div>
+          \r\n
+          <div class=\"rbox_br\">
+            \r\n
+            <div class=\"rbox_bl\">
+              \r\n
+              <div class=\"rbox_b\">&nbsp;</div>
+              \r\n
+            </div>
+            \r\n
+          </div>
+          \r\n
+        </div>
+        \r\n
+      </div>
+      \r\n
+    </div>
+    \r\n
+  </div>
+  \r\n
+</div>

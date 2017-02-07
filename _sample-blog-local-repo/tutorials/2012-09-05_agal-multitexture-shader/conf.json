@@ -1,0 +1,15 @@
+{
+  "author": {
+    "name": "sigman"
+  },
+  "category": "tutorials",
+  "content": {
+    "brief": "brief.html",
+    "extended": "extended.html",
+    "extendedType": "html"
+  },
+  "publishedDate": "2012-09-05T23:00:00.000+0000",
+  "state": "published",
+  "tags": ["programming", "actionscript"],
+  "title": "AGAL multitexture shader"
+}

@@ -1,0 +1,60 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    meta(http-equiv="X-UA-Compatible" content="IE=edge")
+
+    title= title || 'heyka.com'
+    link(rel="shortcut icon", href="/favicon.ico", type="image/x-icon")
+
+    //- Customise the stylesheet for your site by editing /public/styles/site.less
+    //- All .less files will be automatically compiled and minified in production.
+    link(href="/styles/site.min.css", rel="stylesheet")
+    link(rel="stylesheet", href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/styles/default.min.css")
+    
+    //- Custom fonts
+    link(href='http://fonts.googleapis.com/css?family=Open+Sans', rel='stylesheet', type='text/css')
+    
+    //- Include template-specific stylesheets by extending the css block
+    block css
+
+    //- Add any other template-specific HEAD tags by extending the head block
+    block head
+  
+  body
+  
+    include includes/nav
+    
+    #body
+      
+      //- NOTE:
+      //- There is no .container wrapping class around body blocks to allow more flexibility in design.
+      //- Remember to include it in your templates when you override the intro and content blocks!
+      //- The Intro block appears above flash messages (used for temporary information display)
+      //- TODO wsi - do we need this?
+      block intro
+
+      //- The content block should contain the body of your template's content
+      block content
+      
+    //- FOOTER
+    include includes/footer
+
+    //- JAVASCRIPT
+    
+    //- jQuery 1.11.1 is included by default, and required by both Bootstrap
+    //- and the KeystoneJS Content Editor. If you are not targeting IE8,
+    //- you can upgrade to 2.1.3 (also bundled) for better performance.
+    script(src='/js/jquery/jquery-1.11.2.min.js')
+    
+    //- Customise which Bootstrap javascript files are served by including
+    //- them specifically here, instead of bootstrap-3.3.4.min.js
+    script(src='/js/bootstrap/bootstrap-3.3.4.min.js')
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+    //- Add scripts that are globally required by your site here.
+    //- Include template-specific javascript files by extending the js block
+    block js
