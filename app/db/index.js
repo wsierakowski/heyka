@@ -83,32 +83,35 @@ function validateConfObj(conf) {
   return res;
 }
 
-// 1. locate all directories with conf files
-glob(path.join(rootdir, '_local-repo', '**', 'conf') + '.{json,yaml}', (err, confPaths) => {
-  if (err) throw "Error getting configuration files.";
+// 1. Locate all directories with conf files
+glob(path.join(rootdir, '_sample-blog-local-repo', '**', 'conf') + '.{json,yaml}', (globErr, articleConfPaths) => {
+
+  if (globErr) throw "Error getting configuration files for articles.";
+
   // here we have a list of all dirs with conf files!
-  console.log(`confPaths: ${confPaths}`);
+  console.log(`articleConfPaths: ${articleConfPaths}`);
   console.log('==============================')
-  // 2. for every conf, load json file and parse it
-  async.eachLimit(confPaths, 5,
-    function loadConf(confPath, mcb) {
-      let fileExt = path.extname(confPath).toLowerCase();
+
+  // 2. Load articles - each is represented by a configuration file
+  async.eachLimit(articleConfPaths, 5, function loadArticlesIteratee(articleConfPath, articleCb) {
+
+      let confExt = path.extname(articleConfPath).toLowerCase();
 
       async.waterfall([
 
         // 1. Read conf file
         function readConfFile(cb) {
-          fs.readFile(confPath, 'utf-8', cb);
+          fs.readFile(articleConfPath, 'utf-8', cb);
         },
 
         // 2. Parse conf file into obj
         function parseConfFile(content, cb) {
           let parsedConf;
           try {
-            parsedConf = fileExt === '.json' ?
+            parsedConf = confExt === '.json' ?
               JSON.parse(content) : YAML.parse(content);
           } catch(parseError) {
-            return cb({path: confPath, error: parseError});
+            return cb({where: 'parseConfFile' ,path: articleConfPath, error: parseError});
           }
           // to avoid "RangeError: Maximum call stack size exceeded."
           async.setImmediate(function() {
@@ -120,7 +123,7 @@ glob(path.join(rootdir, '_local-repo', '**', 'conf') + '.{json,yaml}', (err, con
         function validateConfig(conf, cb) {
           let res = validateConfObj(conf);
           if (res.length > 0) {
-            return cb({path: confPath, error: res.join('.\n')});
+            return cb({where: 'validateConfig', path: articleConfPath, error: res.join('.\n')});
           }
           // to avoid "RangeError: Maximum call stack size exceeded."
           async.setImmediate(function() {
@@ -130,14 +133,14 @@ glob(path.join(rootdir, '_local-repo', '**', 'conf') + '.{json,yaml}', (err, con
 
         // 4. Read brief and extended content
         function readBriefAndExtended(conf, cb) {
-          let dirname = path.dirname(confPath);
+          let dirname = path.dirname(articleConfPath);
           async.map([
             path.join(dirname, conf.content.brief),
             path.join(dirname, conf.content.extended)
           ],
           fs.readFile,
           (err, res) => {
-            if (err) return cb({path: confPath, error: err});
+            if (err) return cb({where: 'readBriefAndExtended', path: articleConfPath, error: err});
             conf.content.briefBody = res[0].toString();
             conf.content.extendedBody = res[1].toString();
             cb(null, conf);
@@ -151,46 +154,81 @@ glob(path.join(rootdir, '_local-repo', '**', 'conf') + '.{json,yaml}', (err, con
           async.setImmediate(function() {
             cb(null, conf);
           });
-        }
+        },
 
         // 6. Push each conf with article content to local db
-        function pushContent2DB(conf, cb) {
-          // TODO async each...
-          articles.put(conf);
-
-          // Upsert category...
-          categories.get(conf.category, (err, doc) => {
-            if (err) {
-              doc = {
-                _id: conf.category,
-                articles: [conf._id]
-              };
-            } else {
-              doc.articles.push(conf._id);
+        function pushArticles2DB(conf, cb) {
+          async.series([
+            function pushArticle(pcb) {
+              // Push article
+              articles.put(conf, (err, doc) => {
+                if (err) return pcb({where: 'pushArticle', path: articleConfPath, error: ierr});
+                pcb(null);
+              });
+            },
+            function pushCategory(pcb) {
+              // Upsert category...
+              // if category exists, append article to list of articles
+              // otherwise create a new doc
+              categories.get(conf.category, (err, doc) => {
+                if (err) {
+                  doc = {
+                    _id: conf.category,
+                    articles: [conf._id]
+                  };
+                } else {
+                  doc.articles.push(conf._id);
+                }
+                categories.put(doc, (ierr, res) => {
+                  if (ierr) return pcb({where: 'pushCategory', path: articleConfPath, error: ierr});
+                  pcb(null);
+                });
+              });
+            },
+            // Upsert each tag...
+            function pushTags(pcb) {
+              // Upsert tags...
+              async.eachLimit(conf.tags, 1,
+                function pushTagsIteratee(tag, tagCallback) {
+                  tags.get(tag, (err, doc) => {
+                    if (err) {
+                      doc = {
+                        _id: tag,
+                        articles: [conf._id]
+                      };
+                    } else {
+                      doc.articles.push(conf._id);
+                    }
+                    tags.put(doc, (ierr, res) => {
+                      if (ierr) return tagCallback({tag: tag, error: ierr});
+                      tagCallback(null);
+                    });
+                  });
+                },
+                function pushTagsCallback(pushTagsErr) {
+                  if (pushTagsErr) return pcb({where: 'pushTags', path: articleConfPath, error: pushTagsErr});
+                  pcb(null);
+                }
+              );
             }
-            categories.put(doc, (ierr, res) => {
-              if (ierr) return cb({path: confPath, error: ierr});
-            });
-          }
-
-          // // Upsert tags...
-          // async.each(conf.tags, (tag, icb) => {
-          //
-          // });
+          ], function pushArticleCallback(pushArticleErr, pushArticleRes) {
+            if (pushArticleErr) return cb({where: 'pushArticle', path: articleConfPath, error: pushArticleErr});
+            cb(null, conf);
+          });
         }
-      ], function(err, res) {
-        if (err) return mcb(err);
-        console.log('* path:', confPath);
-        console.log('* full conf:', res);
+      ], function waterfallCallback(waterfallErr, waterfallRes) {
+        if (waterfallErr) return articleCb(waterfallErr);
+        console.log('* path:', articleConfPath);
+        //console.log('* full conf:', waterfallRes);
         console.log('------------------------------');
-        mcb(null, res);
+        articleCb(null, waterfallRes);
       });
-    }, function allDone(err, res) {
+    }, function loadArticlesCallback(loadArticlesErr, res) {
       // if any of the file processing produced an error, err would equal that error
-      if( err ) {
+      if (loadArticlesErr) {
         // One of the iterations produced an error.
         // All processing will now stop.
-        console.log('*** A file failed to process:', err);
+        console.log('*** A file failed to process:', loadArticlesErr);
       } else {
         console.log('All files have been processed successfully:', res);
       }
