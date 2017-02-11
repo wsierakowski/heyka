@@ -4,30 +4,37 @@
  * Module dependencies.
  */
 
-var app = require('../app');
-var debug = require('debug')('myapp2:server');
-var http = require('http');
+const webApp = require('../web-app');
+const debug = require('debug')('mywebApp2:server');
+const http = require('http');
+const path = require('path');
+
+const model = require('../model');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
+const port = normalizePort(process.env.PORT || '3000');
+webApp.set('port', port);
 
 /**
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+const server = http.createServer(webApp);
 
 /**
  * Listen on provided port, on all network interfaces.
  */
-
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+const localBlogRepoPath = path.join(process.cwd(), '_sample-blog-local-repo');
+model.init(localBlogRepoPath, (err) => {
+  if (err) throw `Error initializing application, model.init failed: ${err}`;
+  console.log('* Model initialization complete');
+  // server.listen(port);
+  // server.on('error', onError);
+  // server.on('listening', onListening);
+});
 
 /**
  * Normalize a port into a number, string, or false.
