@@ -8,7 +8,7 @@ const webApp = require('../web-app');
 const debug = require('debug')('mywebApp2:server');
 const http = require('http');
 const path = require('path');
-
+const async = require('async');
 const model = require('../model');
 
 /**
@@ -28,13 +28,34 @@ const server = http.createServer(webApp);
  * Listen on provided port, on all network interfaces.
  */
 const localBlogRepoPath = path.join(process.cwd(), '_sample-blog-local-repo');
-model.init(localBlogRepoPath, (err) => {
-  if (err) throw `Error initializing application, model.init failed: ${err}`;
-  console.log('* Model initialization complete');
-  // server.listen(port);
-  // server.on('error', onError);
-  // server.on('listening', onListening);
-});
+async.waterfall([
+  function initModel(cb) {
+    model.init(localBlogRepoPath, (err) => {
+      if (err) return cb({where: 'initModel', error: err});
+      console.log('* Model initialization complete');
+      cb(null);
+    });
+  },
+  function initNav(cb) {
+    webApp.locals.navLinks = [];
+    model.db.categories.allDocs({include_docs: true}, (err, res) => {
+      if (err) return cb({where: 'initNav', err: err});
+      //webApp.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
+      res.rows.forEach(doc => {
+        let item = doc.doc;
+        console.log('item:', {label: item._id, key: item._id, href: item._id});
+        webApp.locals.navLinks.push({label: item._id, key: item._id, href: item._id});
+      });
+      cb(null);
+    });
+  }
+], function initCompleteCallback(err) {
+  if (err) throw `Error initializing application: ${err}.`;
+  console.log('* Pre-initialization complete.')
+  server.listen(port);
+  server.on('error', onError);
+  server.on('listening', onListening);
+})
 
 /**
  * Normalize a port into a number, string, or false.

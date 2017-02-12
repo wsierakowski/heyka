@@ -1,16 +1,18 @@
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+const express = require('express');
+const path = require('path');
+const favicon = require('serve-favicon');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 
-var index = require('./routes/index');
-var users = require('./routes/users');
+const index = require('./routes/index');
+const users = require('./routes/users');
 
-var myUtils = require('./libs/my-utils.js');
+const myUtils = require('./libs/my-utils.js');
 
-var app = express();
+const db = require('./model').db;
+
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -47,10 +49,6 @@ app.use(function(err, req, res, next) {
 
 app.locals.title = "heyka.com blog";
 app.locals.curYear = new Date().getFullYear().toString();
-app.locals.navLinks = [];
-app.locals.navLinks.push({label: 'Grzyb1', key: 'grzyb1', href:'http://sigman.pl'});
-app.locals.navLinks.push({label: 'Grzyb2', key: 'grzyb2', href:'http://sigman.pl'});
-app.locals.navLinks.push({label: 'Grzyb3', key: 'grzyb3', href:'http://sigman.pl'});
 
 app.locals.myUtils = myUtils;
 
