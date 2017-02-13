@@ -54,8 +54,8 @@ app.locals.myUtils = myUtils;
 
 app.locals.urls = {
     blog: '/',
-    categories: '',
-    posts: 'posts',
+    categories: 'categories',
+    //posts: myUtils.getUrl(app.locals.urls.categories, 'posts',
     tags: 'tags'
 };
 
