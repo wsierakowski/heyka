@@ -16,14 +16,17 @@ app.get('/users/:userId/books/:bookId', function (req, res) {
 /* GET home page. */
 router.get('/', function(req, res, next) {
   let locals = res.locals;
-  locals.section = 'blog';
+  locals.section = 'blog-home';
   locals.data = locals.data || {};
   locals.data.posts = [];
   res.render('index', { title: 'Express' });
 });
 
-router.get(
-  myUtils.getUrl(conf.URLS.blog, conf.URLS.categories, ':category'),
+/* GET list of posts per category or tag */
+router.get([
+    myUtils.getUrl(conf.URLS.blog, conf.URLS.categories, ':category'),
+    myUtils.getUrl(conf.URLS.blog, conf.URLS.tags, ':tag'),
+  ],
   function(req, res, next) {
     if (req.params.category === 'favicon.ico') {
       return res.send(404);
@@ -33,8 +36,26 @@ router.get(
   function(req, res, next) {
     let locals = res.locals;
     locals.section = 'blog';
+    locals.filters = {
+      category: req.params.category,
+      tag: req.params.tag,
+      search: req.query.search
+    };
+    console.log('filters:', locals.filters);
     locals.data = locals.data || {};
     locals.data.posts = [];
+
+    // fetch latest posts (where state=published, limit 5, sort -publishDate)
+    locals.data.latestPosts = [{
+      slug: 'some-random-latest-article-post', title: 'some random latest article post'
+    }];
+
+    // fetch popular posts (where state=published, limit 5, sort -hits)
+    locals.data.popularPosts = [{
+      slug: 'some-random-popular-article-post',
+      title: 'some random popular article post'
+    }];
+
     model.db.categories.get(req.params.category, (catErr, catDoc) => {
       if (catErr) return next(catErr);
       //console.log('category doc-->', catDoc);
