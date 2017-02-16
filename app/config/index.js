@@ -1,4 +1,5 @@
 module.exports = {
+  blogTitle: 'heyka',
   URLS: {
     blog: '/',
     categories: '/',

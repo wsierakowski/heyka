@@ -1,45 +1,45 @@
 //- list of locals
-//- 
+//-
 
 //- .well.text-center(style='margin-top: 20px;')
 //- 	p.lead Don't want to miss updates?
 //- 	button.btn.btn-primary.btn-md Subscribe to my feed
 //- a(href=blogurl + '/post/' + post.slug)= post.title
 .panel.panel-default(style='margin-top: 20px;')
-	.panel-heading
-		h4.panel-title Latests Posts
-	ul.list-group
-		each post, i in data.latestPosts
-			li.list-group-item
-				//- TODO a(href=blogurl + '/post/' + post.slug) #{i+1}. #{post.title}
-				a(href=myUtils.getUrl(urls.blog, urls.posts, post.slug)) #{i+1}. #{post.title}
+  .panel-heading
+    h4.panel-title Latests Posts
+  ul.list-group
+    each post, i in data.latestPosts
+      li.list-group-item
+        //- TODO a(href=blogurl + '/post/' + post.slug) #{i+1}. #{post.title}
+        a(href=myUtils.getUrl(urls.blog, urls.posts, post.slug)) #{i+1}. #{post.title}
 
 .panel.panel-default(style='margin-top: 20px;')
-	.panel-heading
-		h4.panel-title Popular Posts
-	ul.list-group
-		each post, i in data.popularPosts
-			li.list-group-item
-				//- TODO a(href=blogurl + '/post/' + post.slug) #{i+1}. #{post.title}
-				a(href=myUtils.getUrl(urls.blog, urls.posts, post.slug)) #{i+1}. #{post.title} (#{post.hits})
+  .panel-heading
+    h4.panel-title Popular Posts
+  ul.list-group
+    each post, i in data.popularPosts
+      li.list-group-item
+        //- TODO a(href=blogurl + '/post/' + post.slug) #{i+1}. #{post.title}
+        a(href=myUtils.getUrl(urls.blog, urls.posts, post.slug)) #{i+1}. #{post.title} (#{post.hits})
 
 if data.categories.length
-	.panel.panel-default
-		.panel-heading
-			h4.panel-title Categories
-		ul.list-group
-			//-  TODO a(href=blogurl + '/', class=!data.category ? 'active' : false).list-group-item All
-			a(href=myUtils.getUrl(urls.blog, urls.categories), class=!data.category ? 'active' : false).list-group-item All
-			each cat in data.categories
-				//- TODO (href=blogurl + '/' + cat.key, class=data.category && data.category.id == cat.id ? 'active' : false).list-group-item= cat.name
-				a(href=myUtils.getUrl(urls.blog, urls.categories, cat.key), class=data.category && data.category.id == cat.id ? 'active' : false).list-group-item #{cat.name} (#{cat.postCount})
+  .panel.panel-default
+    .panel-heading
+      h4.panel-title Categories
+    ul.list-group
+      //-  TODO a(href=blogurl + '/', class=!data.category ? 'active' : false).list-group-item All
+      a(href=myUtils.getUrl(urls.blog, urls.categories), class=!data.category ? 'active' : false).list-group-item All
+      each cat in data.categories
+        //- TODO (href=blogurl + '/' + cat.key, class=data.category && data.category.id == cat.id ? 'active' : false).list-group-item= cat.name
+        a(href=myUtils.getUrl(urls.blog, urls.categories, cat.id), class=data.category && data.category.id == cat.id ? 'active' : false).list-group-item #{cat.id} (#{cat.articleCount})
 
 if data.tags.length
-	.panel.panel-default
-		.panel-heading
-			h4.panel-title Tags
-		.panel-body
-			ul.list-inline
-				each tag in data.tags
-					//-  TODO li: a(href=blogurl + '/tags/' + tag.key) #{tag.name} (#{tag.postCount})
-					li: a(href=myUtils.getUrl(urls.blog, urls.tags, tag.key)) #{tag.name} (#{tag.postCount})
+  .panel.panel-default
+    .panel-heading
+      h4.panel-title Tags
+    .panel-body
+      ul.list-inline
+        each tag in data.tags
+          //-  TODO li: a(href=blogurl + '/tags/' + tag.key) #{tag.name} (#{tag.postCount})
+          li: a(href=myUtils.getUrl(urls.blog, urls.tags, tag.key)) #{tag.id} (#{tag.articleCount})

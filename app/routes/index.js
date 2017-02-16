@@ -2,6 +2,7 @@ const express = require('express');
 const async = require('async');
 
 const model = require('../model');
+const middleware = require('./middleware');
 const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
@@ -33,6 +34,9 @@ router.get([
     }
     next();
   },
+  middleware.initLocals,
+  middleware.fetchCategories,
+  middleware.fetchTags,
   function(req, res, next) {
     let locals = res.locals;
     locals.section = 'blog';
