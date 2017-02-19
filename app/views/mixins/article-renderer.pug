@@ -1,46 +1,46 @@
-//- isBlogArticle means that the article will be printed for blog, 
+//- isBlogArticle means that the article will be printed for blog,
 //- otherwise for single post display
-mixin render-article(isBlogArticle, post)
+mixin renderArticle(isBlogArticle, post)
   article.post-article
     .post
       header
         //- TODO h2: a(href=blogurl + '/post/' + post.slug)= post.title
         if isBlogArticle
-          h2: a(href=myUtils.getUrl(urls.blog, urls.posts, post.slug))= post.title
+          h2: a(href=myUtils.generateURL(urls.blog, urls.posts, post.slug))= post.title
         else
           h1= post.title
         .row
           .article-icons-group1.col-sm-6.col-md-6
             if post.publishedDate
-              span.glyphicon.glyphicon-time 
+              span.glyphicon.glyphicon-time
               |  #{post.publishedDate.format('MMMM Do, YYYY')}  &nbsp;&nbsp;
             if post.author
-              span.glyphicon.glyphicon-user 
+              span.glyphicon.glyphicon-user
               |  by #{post.author.name}  &nbsp;&nbsp;
             if post.hits
-              span.glyphicon.glyphicon-cloud-download 
-              |  #{post.hits} 
+              span.glyphicon.glyphicon-cloud-download
+              |  #{post.hits}
           .article-icons-group2.col-sm-6.col-md-6
             if post.categories && post.categories.length
-              span.glyphicon.glyphicon-folder-open 
+              span.glyphicon.glyphicon-folder-open
               | &nbsp;&nbsp;
               each cat, i in post.categories
                 //- TODO a(href=blogurl + '/categories/' + cat.key)= cat.name
-                a(href=myUtils.getUrl(urls.blog, urls.categories, cat.key))= cat.name
+                a(href=myUtils.generateURL(urls.blog, urls.categories, cat.key))= cat.name
                 if i < post.categories.length - 1
-                  | , 
+                  | ,
                 else
-                  | 
+                  |
             if post.tags && post.tags.length
-              span.glyphicon.glyphicon-bookmark 
+              span.glyphicon.glyphicon-bookmark
               | &nbsp;&nbsp;
               each tag, i in post.tags
                 //- TODO a(href=blogurl + '/tags/' + tag.key)= tag.name
-                a(href=myUtils.getUrl(urls.blog, urls.tags, tag.key))= tag.name
+                a(href=myUtils.generateURL(urls.blog, urls.tags, tag.key))= tag.name
                 if i < post.tags.length - 1
-                  | , 
+                  | ,
                 else
-                  | 
+                  |
 
       hr
 
@@ -52,7 +52,7 @@ mixin render-article(isBlogArticle, post)
             img(src=post._.image.fit(160,160)).img.pull-right
           else
             .image-wrap: img(src=data.post._.image.fit(750,450)).img-responsive
-        p.lead!= post.content.brief
+        p.lead!= post.content.briefBody
       //- p.lead
       //-   | #{post.content.brief}
       if post.content.isExtended
@@ -60,6 +60,6 @@ mixin render-article(isBlogArticle, post)
           //- p.read-more: a(href=blogurl + '/post/' + post.slug) Read more...
           p.post.text-right
             //- TODO a.text-right(href=blogurl + '/post/' + post.slug) continue reading...
-            a.text-right(href=myUtils.getUrl(urls.blog, urls.posts, post.slug)) continue reading...
+            a.text-right(href=myUtils.generateURL(urls.blog, urls.posts, post.slug)) continue reading...
         else
           .post!= post.content.extended

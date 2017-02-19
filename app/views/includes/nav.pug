@@ -7,10 +7,10 @@ header.navbar.navbar-inverse.navbar-fixed-top.bs-docs-nav(role="banner")
         span.icon-bar
         span.icon-bar
       //- a.navbar-brand.logo-link(href='/')
-      a.logo-link(href=myUtils.getUrl(urls.blog))
-        img(src=myUtils.getUrl(urls.blog, "images/sigman.pl.png"), alt=title)
+      a.logo-link(href=myUtils.generateURL(urls.blog))
+        img(src=myUtils.generateURL(urls.blog, "images/sigman.pl.png"), alt=title)
     nav.collapse.navbar-collapse.bs-navbar-collapse(role="navigation")
-      form.navbar-form.navbar-right(role="search", method="get", action=myUtils.getUrl(urls.blog))
+      form.navbar-form.navbar-right(role="search", method="get", action=myUtils.generateURL(urls.blog))
         .form-group
           input(type="text", name="search" class="form-control input-sm", placeholder="Search")
         button(type="submit", class="btn btn-default btn-sm") Search

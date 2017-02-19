@@ -150,6 +150,7 @@ function loadArticle(db) {
               if (err) {
                 doc = {
                   _id: conf.category,
+                  name: conf.category, // add util for capitalizing first letter with inflection module
                   articles: [conf._id]
                 };
               } else {
@@ -170,6 +171,7 @@ function loadArticle(db) {
                   if (err) {
                     doc = {
                       _id: tag,
+                      name: tag,
                       articles: [conf._id]
                     };
                   } else {

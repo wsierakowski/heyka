@@ -75,6 +75,7 @@ exports.fetchCategories = function(req, res, next) {
     catList.rows.forEach((category) => {
       locals.data.categories.push({
         id: category.doc._id,
+        name: category.doc.name,
         articleCount: category.doc.articles.length
       });
     });
@@ -93,29 +94,12 @@ exports.fetchTags = function(req, res, next) {
     tagList.rows.forEach((tag) => {
       locals.data.tags.push({
         id: tag.doc._id,
+        name: tag.doc.name,
         articleCount: tag.doc.articles.length
       });
     });
     next();
   });
-
-  // keystone.list('PostTag').model.find().sort('name').exec(function(err, results) {
-  //   if (err) {
-  //     return next(err);
-  //   }
-  //
-  //   locals.data.tags = results;
-  //
-  //   // Load the counts for each tag
-  //   async.each(locals.data.tags, function(tag, cb) {
-  //     keystone.list('Post').model.count().where('tags').in([tag.id]).exec(function(err, count) {
-  //       tag.postCount = count;
-  //       cb(err);
-  //     });
-  //   }, function(err) {
-  //     next(err);
-  //   });
-  // });
 };
 
 // Load the posts

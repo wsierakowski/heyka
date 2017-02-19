@@ -1,5 +1,6 @@
 const express = require('express');
 const async = require('async');
+const moment = require('moment');
 
 const model = require('../model');
 const middleware = require('./middleware');
@@ -25,8 +26,8 @@ router.get('/', function(req, res, next) {
 
 /* GET list of posts per category or tag */
 router.get([
-    myUtils.getUrl(conf.URLS.blog, conf.URLS.categories, ':category'),
-    myUtils.getUrl(conf.URLS.blog, conf.URLS.tags, ':tag'),
+    myUtils.generateURL(conf.URLS.blog, conf.URLS.categories, ':category'),
+    myUtils.generateURL(conf.URLS.blog, conf.URLS.tags, ':tag'),
   ],
   function(req, res, next) {
     if (req.params.category === 'favicon.ico') {
@@ -47,7 +48,9 @@ router.get([
     };
     console.log('filters:', locals.filters);
     locals.data = locals.data || {};
-    locals.data.posts = [];
+    locals.data.posts = {};
+    locals.data.posts.results = [];
+    locals.data.posts.totalPages = 1;
 
     // fetch latest posts (where state=published, limit 5, sort -publishDate)
     locals.data.latestPosts = [{
@@ -63,12 +66,17 @@ router.get([
     model.db.categories.get(req.params.category, (catErr, catDoc) => {
       if (catErr) return next(catErr);
       //console.log('category doc-->', catDoc);
+      locals.data.category = catDoc;
       async.eachSeries(
         catDoc.articles,
         (article, cb) => {
           model.db.articles.get(article, (articleErr, articleDoc) => {
             if (articleErr) return cb(articleErr);
-            locals.data.posts.push(articleDoc);
+            // TODO create utility to post-process articles before sending them to render
+            articleDoc.publishedDate = moment(articleDoc.publishedDate);
+            // TODO add article intro image support
+            articleDoc.image = {exists: false};
+            locals.data.posts.results.push(articleDoc);
             console.log('->', articleDoc._id);
             cb(null);
           })

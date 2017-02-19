@@ -47,7 +47,7 @@ async.waterfall([
   function initNav(cb) {
     webApp.locals.navLinks = [];
     webApp.locals.navLinks.push({
-      label: 'Latests', key: 'latests', href: myUtils.getUrl(conf.URLS.blog, conf.URLS.categories)
+      label: 'Latests', key: 'latests', href: myUtils.generateURL(conf.URLS.blog, conf.URLS.categories)
     });
     model.db.categories.allDocs({include_docs: true}, (err, res) => {
       if (err) return cb({where: 'initNav', err: err});
@@ -58,7 +58,7 @@ async.waterfall([
         webApp.locals.navLinks.push({
           label: item._id,
           key: item._id,
-          href: myUtils.getUrl(conf.URLS.blog, conf.URLS.categories, item._id)
+          href: myUtils.generateURL(conf.URLS.blog, conf.URLS.categories, item._id)
         });
       });
       cb(null);
