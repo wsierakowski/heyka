@@ -12,7 +12,7 @@
     each post, i in data.latestPosts
       li.list-group-item
         //- TODO a(href=blogurl + '/post/' + post.slug) #{i+1}. #{post.title}
-        a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.slug)) #{i+1}. #{post.title}
+        a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id)) #{i+1}. #{post.title}
 
 .panel.panel-default(style='margin-top: 20px;')
   .panel-heading
@@ -21,7 +21,7 @@
     each post, i in data.popularPosts
       li.list-group-item
         //- TODO a(href=blogurl + '/post/' + post.slug) #{i+1}. #{post.title}
-        a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.slug)) #{i+1}. #{post.title} (#{post.hits})
+        a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id)) #{i+1}. #{post.title} (#{post.hits})
 
 if data.categories.length
   .panel.panel-default

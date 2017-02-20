@@ -118,6 +118,7 @@ function loadArticle(db) {
         (err, res) => {
           if (err) return cb({where: 'readBriefAndExtended', path: articleConfPath, error: err});
           conf.content.briefBody = res[0].toString();
+          if (res[1].toString()) conf.content.isExtended = true;
           conf.content.extendedBody = res[1].toString();
           cb(null, conf);
         });
@@ -125,7 +126,7 @@ function loadArticle(db) {
 
       // 5. Do all necessary processing on the conf before it is passed to db
       function processConf(conf, cb) {
-        conf._id = conf.slug = myUtils.slugify(conf.title);
+        conf._id = conf.id = conf.slug = myUtils.slugify(conf.title);
         conf.category = {
           _id: myUtils.slugify(conf.category),
           id: myUtils.slugify(conf.category),

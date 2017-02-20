@@ -104,32 +104,48 @@ exports.fetchTags = function(req, res, next) {
 
 // Load the posts
 exports.fetchLatestPosts = function(req, res, next) {
-  var locals = res.locals,
-    q = keystone.list('Post').model
-    .find()
-    .where('state', 'published')
-    .limit(5)
-    .sort('-publishedDate')
-    .select('slug title');
-
-  q.exec(function(err, results) {
-    locals.data.latestPosts = results;
-    next(err);
-  });
+  var locals = res.locals;
+  // fetch latest posts (where state=published, limit 5, sort -publishDate)
+  locals.data.latestPosts = [{
+    id: 'some-random-latest-article-post',
+    title: 'some random latest article post',
+    category: {id: 'tips'}
+  }];
+  next();
+  // var locals = res.locals,
+  //   q = keystone.list('Post').model
+  //   .find()
+  //   .where('state', 'published')
+  //   .limit(5)
+  //   .sort('-publishedDate')
+  //   .select('slug title');
+  //
+  // q.exec(function(err, results) {
+  //   locals.data.latestPosts = results;
+  //   next(err);
+  // });
 };
 
 // Load the posts
 exports.fetchPopularPosts = function(req, res, next) {
-  var locals = res.locals,
-    q = keystone.list('Post').model
-    .find()
-    .where('state', 'published')
-    .limit(5)
-    .sort('-hits')
-    .select('slug title hits');
-
-  q.exec(function(err, results) {
-    locals.data.popularPosts = results;
-    next(err);
-  });
+  var locals = res.locals;
+  // fetch popular posts (where state=published, limit 5, sort -hits)
+  locals.data.popularPosts = [{
+    id: 'some-random-popular-article-post',
+    title: 'some random popular article post',
+    category: {id: 'tips'}
+  }];
+  next();
+  // var locals = res.locals,
+  //   q = keystone.list('Post').model
+  //   .find()
+  //   .where('state', 'published')
+  //   .limit(5)
+  //   .sort('-hits')
+  //   .select('slug title hits');
+  //
+  // q.exec(function(err, results) {
+  //   locals.data.popularPosts = results;
+  //   next(err);
+  // });
 };

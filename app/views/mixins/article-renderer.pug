@@ -6,7 +6,7 @@ mixin renderArticle(showBriefOnly, post)
       header
         //- TODO h2: a(href=blogurl + '/post/' + post.slug)= post.title
         if showBriefOnly
-          h2: a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.slug))= post.title
+          h2: a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id))= post.title
         else
           h1= post.title
         .row
@@ -31,7 +31,7 @@ mixin renderArticle(showBriefOnly, post)
               | &nbsp;&nbsp;
               each tag, i in post.tags
                 //- TODO a(href=blogurl + '/tags/' + tag.key)= tag.name
-                a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.tags, tag.key))= tag.name
+                a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.tags, tag.id))= tag.name
                 if i < post.tags.length - 1
                   | ,&nbsp;
                 else
@@ -55,6 +55,7 @@ mixin renderArticle(showBriefOnly, post)
           //- p.read-more: a(href=blogurl + '/post/' + post.slug) Read more...
           p.post.text-right
             //- TODO a.text-right(href=blogurl + '/post/' + post.slug) continue reading...
-            a.text-right(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.slug)) continue reading...
+            a.text-right(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id)) continue reading...
         else
-          .post!= post.content.extended
+          p --------------------------------------
+          .post!= post.content.extendedBody

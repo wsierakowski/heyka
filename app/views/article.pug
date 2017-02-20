@@ -9,7 +9,7 @@ block content
 			if !data.post
 				h2 Invalid Post.
 			else
-				+render-article(false, data.post)
+				+renderArticle(false, data.post)
 			ul.pager: li.previous: a(href=myUtils.generateURL(BLOG_PATHS.blog)) &lt; Back to the blog
 		.col-sm-4.col-md-3
 			include includes/side-panels

@@ -24,6 +24,43 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+// TODO articles should be placed in categories from URL point of view,
+// like if a category was a directory of articles
+
+/* GET article */
+router.get(
+  myUtils.generateURL(conf.BLOG_PATHS.blog, ':category', ':post'),
+  function(req, res, next) {
+    if (req.params.category === 'favicon.ico') {
+      return res.send(404);
+    }
+    next();
+  },
+  middleware.initLocals,
+  middleware.fetchCategories,
+  middleware.fetchTags,
+  middleware.fetchLatestPosts,
+  middleware.fetchPopularPosts,
+  function renderSelectedArticle(req, res, next) {
+    let locals = res.locals;
+    locals.section = 'article';
+    locals.filters = {
+      post: req.params.post
+    };
+    locals.data = locals.data || {};
+    locals.data.posts = [];
+
+    model.db.articles.get(req.params.post, (err, articleDoc) => {
+      if (err) return next(err);
+      // TODO create utility to post-process articles before sending them to render
+      articleDoc.publishedDate = moment(articleDoc.publishedDate);
+      articleDoc.image = {exists: false};
+      locals.data.post = articleDoc;
+      res.render('article');
+    });
+  }
+);
+
 /* GET list of posts per category or tag */
 router.get([
     myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories, ':category'),
@@ -38,9 +75,11 @@ router.get([
   middleware.initLocals,
   middleware.fetchCategories,
   middleware.fetchTags,
-  function(req, res, next) {
+  middleware.fetchLatestPosts,
+  middleware.fetchPopularPosts,
+  function renderArticleList(req, res, next) {
     let locals = res.locals;
-    locals.section = 'blog';
+    locals.section = 'list';
     locals.filters = {
       category: req.params.category,
       tag: req.params.tag,
@@ -51,17 +90,6 @@ router.get([
     locals.data.posts = {};
     locals.data.posts.results = [];
     locals.data.posts.totalPages = 1;
-
-    // fetch latest posts (where state=published, limit 5, sort -publishDate)
-    locals.data.latestPosts = [{
-      slug: 'some-random-latest-article-post', title: 'some random latest article post'
-    }];
-
-    // fetch popular posts (where state=published, limit 5, sort -hits)
-    locals.data.popularPosts = [{
-      slug: 'some-random-popular-article-post',
-      title: 'some random popular article post'
-    }];
 
     model.db.categories.get(req.params.category, (catErr, catDoc) => {
       if (catErr) return next(catErr);
