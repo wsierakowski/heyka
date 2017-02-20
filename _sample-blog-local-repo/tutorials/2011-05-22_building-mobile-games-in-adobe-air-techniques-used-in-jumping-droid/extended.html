@@ -1,0 +1,1589 @@
+<div class="recycle">Article imported from <em>http://sierakowski.eu/list-of-tips/86-building-mobile-games-in-adobe-air-optimization-techniques-used-in-jumping-droid-game.html</em></div>
+<p>&nbsp;</p>
+<p><span style="color: #ff0000;">LAST UPDATE: September 2012 (TIP 17: using Vibration Native Extension)</span></p>
+<p class="info">
+    <a href="https://market.android.com/details?id=air.JumpingDroid"><img style="vertical-align: middle;" src="http://sierakowski.eu/examples/jumpingDroidOptimization/jumpingDroid.png" alt="jumpingDroid" /> <strong>Play Jumping Droid from the Android Market</strong></a><br /> <br />
+    <a href="http://itunes.apple.com/us/app/jumping-robot/id451002961"><img style="vertical-align: middle;" src="http://sierakowski.eu/examples/jumpingDroidOptimization/jumpingRobot.png" alt="jumpingRobot" /> <strong>Play Jumping Robot from the Apple AppStore</strong></a>
+</p>
+<p>&nbsp;</p>
+<h3>TIP 1: GPU or CPU?</h3>
+<p style="text-align: justify;">This question should be answered before you start your app/game development. When the first version of AIR for mobile was released, many developers (including me) just took one of their web - Flash project and published it with AIR to see how it would
+    performed. If the project had many animations, the performance was usually very poor in both CPU and GPU modes. It was bad in CPU because mobile processors couldn't handle complex mathematical calculations involved in handling vector objects and animating
+    them (and AIR wasn't well optimised as well). It was bad in GPU because usually the code taken from Flash projects wasn't optimised to use bitmaps efficiently. But in the meantime, Adobe has done many improvements to the CPU mode, especially for iOS
+    (AIR 2.7 is really faster than older releases) and also developers have learnt how to properly work with GPU.</p>
+<p style="text-align: justify;">Generally, when looking for answer to question which mode is good for a game/app, you need to specify if you are going to use many static elements like buttons, flat graphics, text boxes and overall very little animation or rather there is going to be
+    plenty of animated objects moving and interacting with each other across the screen.</p>
+<p style="text-align: justify;">In the first scenario the CPU will do the job. The main pros of the CPU mode is that you can use all filters (drop shadow, glow etc), masks, all blending modes, which are limited when using GPU. Only in CPU mode it really makes sense to use ActionScript
+    drawing (graphics class of Display Objects), ie to create graphs and graphical simulations. And more importantly, you just take all vectors created by a graphic designer and use them as they are without converting them to any other format. With AIR
+    2.7 your app will easily perform in 60 fps if there is not too much going on on the screen.</p>
+<p style="text-align: justify;">In the second scenario it would make more sense to relieve the CPU and delegate all the graphical work to the GPU. But it is not enough to just "switch" to the GPU, you have to plan and develop your game to properly utilize this mode. GPU can work only
+    with bitmaps, so you need to create / convert all your graphical objects as / to bitmaps beforehand or convert all your vector objects at run time. In the first approach, developers usually use png files (as they support transparency) and usually
+    import them directly to the FLA's file library during development or include them in the SWC file or probably most often load them at runtime (loading when they are really needed - to conserve memory). In the second approach there are two options,
+    you can use cacheAsBitmap and cacheAsBitmapMatrix properties of Display Object that convert their vector representation to bitmaps automatically or manually take a snapshot of Display Objects using the draw method of BitmapData and use it with bitmap
+    objects. I'm using the second method and talk about it more in tip #2. Bu be careful, there is a catch when using the GPU mode though, converting to bitmaps at runtime is a very processor intensive process, it takes time. And forget about converting
+    to bitmap at every new frame, it will just kill your app's performance. Developers beginning with AIR are often surprised that the frame rate drops to extremely low values when they "cache as bitmap" movie clips containing frames of animations. This
+    basically means that at every new frame this movie clip has to be converted to bitmap (and sent to GPU) because it just changed (another frame of animation). In my opinion cacheAsBitmap should throw an error when used on movie clips with more frames
+    then one!</p>
+<p>&nbsp;</p>
+<h3>TIP 2: Resize MovieClips to match device's screen size and convert them to bitmaps</h3>
+<p style="text-align: justify;">If you want your game to correctly scale and fit on every mobile device, from smartphones to tablets, then you need to rescale all your assets like backgrounds, hero, enemies, buttons either up or down. But on the other hand you probably already know
+    that if you want smooth animations and keep high frame rate you need to use GPU and bitmaps rather than vector representations of your graphical objects. One easy solution is to resize all objects and then use cacheAsBitmap and cacheAsBitmapMatrix
+    properties to convert to bitmaps. But this technique doesn't produce the best quality graphics, you will notice some strange things going on on converted curves or circles... this wasn't good enough for me. Many developers actually use pre-created
+    bitmaps, usually sprite sheets in form of PNG files. This is the fastest option from the game performance point of view as there is no conversion from vectors to bitmaps (what can take significant amount of time) but again you can't (shouldn't) rescale
+    bitmaps as this would lower their quality. If you develop for Apple devices then you can create separate pngs for iPad, iPhone and iPhone 4 - you know all the types of resolutions already: 1024x768, 480x320, 960x640. But you don't know all resolutions
+    of Android devices, they may slightly vary, in example Galaxy Tab has 1024x600 and other 7 inch tablets 800x480, bigger tablets 1024x768 and smartphones may have 800x480, 960x540...</p>
+<p style="text-align: justify;">I decided to do that another way. First I rescale all sprites and movie clips according to a detected screen resolution, then convert them all to bitmapDatas and use as bitmaps. This way I have the best quality graphics, smooth animation and I can reuse
+    the same bitmapData on many bitmap object (one bitmap in memory and many instances of it on the screen).</p>
+<p style="text-align: justify;">In Jumping Droid you can see dynamically resized objects and also different backgrounds layout on different screen sizes (last two screenshots are extreme cases). I stick city image to the bottom and clouds at the top:</p>
+<p style="text-align: center;"><img src="http://sierakowski.eu/examples/jumpingDroidOptimization/jumpingDroidResize480x320.jpg" alt="Jumping Droid 480 x 320" /></p>
+<p style="text-align: center;"><img src="http://sierakowski.eu/examples/jumpingDroidOptimization/jumpingDroidResize720x600.jpg" alt="Jumping Droid 720x 600" /></p>
+<p style="text-align: center;"><img src="http://sierakowski.eu/examples/jumpingDroidOptimization/jumpingDroidResize720x320.jpg" alt="Jumping Droid 720 x 320" /></p>
+<p style="text-align: justify;">The code snippet would look something like this:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #009900;">//all graphic objects were created for 800 x 480</span></span>
+<span style="vertical-align: top;"><span style="color: #009900;">//so I save this details as my base resolution</span></span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">public</span> static const GAME_ORG_WIDTH<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=uint%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:uint.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">uint</span></a> = <span style="color: #000000; font-weight: bold;">800</span>;</span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">public</span> static const GAME_ORG_HEIGHT<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=uint%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:uint.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">uint</span></a> = <span style="color: #000000; font-weight: bold;">480</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//later in my init function (handler for Event.ADDED)</span></span>
+<span style="vertical-align: top;"><span style="color: #339966; font-weight: bold;">function</span> <span style="color: #004993;">init</span><span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #004993;">stage</span>.<span style="color: #004993;">scaleMode</span> = <a href="http://www.google.com/search?q=stagescalemode%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:stagescalemode.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">StageScaleMode</span></a>.<span style="color: #004993;">NO_SCALE</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #004993;">stage</span>.<span style="color: #004993;">align</span> = <a href="http://www.google.com/search?q=stagealign%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:stagealign.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">StageAlign</span></a>.<span style="color: #004993;">TOP_LEFT</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #004993;">stage</span>.<span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">RESIZE</span>, setUpScreen<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;"><span style="color: #339966; font-weight: bold;">function</span> setUpScreen<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #004993;">stage</span>.<span style="color: #004993;">removeEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">RESIZE</span>, setUpScreen<span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span><span style="color: #004993;">stage</span>.fullScreenWidth <span style="color: #000000; font-weight: bold;">&gt;</span> <span style="color: #004993;">stage</span>.fullScreenHeight<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      gameStageWidth = <span style="color: #004993;">stage</span>.fullScreenWidth;</span>
+<span style="vertical-align: top;">      gameStageHeight = <span style="color: #004993;">stage</span>.fullScreenHeight;</span>
+<span style="vertical-align: top;">   <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">else</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      gameStageWidth = <span style="color: #004993;">stage</span>.fullScreenHeight;</span>
+<span style="vertical-align: top;">      gameStageHeight = <span style="color: #004993;">stage</span>.fullScreenWidth;</span>
+<span style="vertical-align: top;">   <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">   rescaleRatio = gameStageWidth <span style="color: #000000; font-weight: bold;">/</span> GAME_ORG_WIDTH;</span>
+
+<span style="vertical-align: top;">   <span style="color: #009900;">//I use ratio to rescale every object, ie:</span></span>
+<span style="vertical-align: top;">   hero.<span style="color: #004993;">scaleX</span> = hero.<span style="color: #004993;">scaleY</span> = rescaleRatio;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">For bitmap backgrounds which fill the whole screen you will need to crop some part of it (width or height) depending one a device screen size, unless your background has some repeating pattern or you want to break proportions (no - don't do that!). My
+    backgrounds for game levels are not cropped actually. I resize them and if there are white borders I just use bitmapData's copy pixel method to fill them. I literary take the first column of a background image pixels to fill the left white gap and
+    last column of pixels to cover the right gap. Similarly first row for top gap and last for bottom.</p>
+<p style="text-align: justify;">Now when all your sprites and movie clips are resized, you are ready to convert them to bitmaps. I created a simple class with public static functions that takes as a parameter a reference to a movieclip, create a sprite container so that movieclips transformations
+    like rotation or scaling are going to be preserved (they would be lost if I worked on display objects directly, unless I would use transformation matrix but this method is just simpler) and then go frame by frame to create bitmap data snapshots of
+    each frame and save it to a vector typed for BitmapDatas.</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #339966; font-weight: bold;">function</span> MovieClipToBitmapData<span style="color: #000000;">(</span>mc<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=movieclip%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:movieclip.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">MovieClip</span></a>, xscale<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000; font-weight: bold;">1</span>, </span>
+<span style="vertical-align: top;">                                        yscale<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span>Vector.<span style="color: #000000; font-weight: bold;">&lt;</span>BitmapData<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #6699cc; font-weight: bold;">var</span> bitmapDataVector<span style="color: #000000; font-weight: bold;">:</span>Vector.<span style="color: #000000; font-weight: bold;">&lt;</span>BitmapData<span style="color: #000000; font-weight: bold;">&gt;</span> = <span style="color: #0033ff; font-weight: bold;">new</span> Vector.<span style="color: #000000; font-weight: bold;">&lt;</span>BitmapData<span style="color: #000000; font-weight: bold;">&gt;</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">   spriteContainer.<span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>mc<span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">   <span style="color: #009900;">//loop through each movie clip frame, </span></span>
+<span style="vertical-align: top;">   <span style="color: #009900;">//rescale it if necessary and create bitmap snapshot</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">for</span> <span style="color: #000000;">(</span><span style="color: #6699cc; font-weight: bold;">var</span> i<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=uint%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:uint.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">uint</span></a> = <span style="color: #000000; font-weight: bold;">1</span>; i <span style="color: #000000; font-weight: bold;">&lt;</span>= mc.<span style="color: #004993;">totalFrames</span>; i<span style="color: #000000; font-weight: bold;">++</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> spriteContainer<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      mc.<span style="color: #004993;">gotoAndStop</span><span style="color: #000000;">(</span>i<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      mc.<span style="color: #004993;">scaleX</span> = xscale;</span>
+<span style="vertical-align: top;">      mc.<span style="color: #004993;">scaleY</span> = yscale;</span>
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> bd<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=bitmapdata%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:bitmapdata.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">BitmapData</span></a> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=bitmapdata%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:bitmapdata.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">BitmapData</span></a><span style="color: #000000;">(</span>spriteContainer.<span style="color: #004993;">width</span>, </span>
+<span style="vertical-align: top;">                                  spriteContainer.<span style="color: #004993;">height</span>, <span style="color: #0033ff; font-weight: bold;">true</span>, 0x00000000<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      bd.<span style="color: #004993;">draw</span><span style="color: #000000;">(</span>spriteContainer<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      bitmapDataVector.<span style="color: #004993;">push</span><span style="color: #000000;">(</span>bd<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">   spriteContainer.<span style="color: #004993;">removeChild</span><span style="color: #000000;">(</span>mc<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">return</span> bitmapDataVector;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Then in your game you could use it like this:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #009900;">//get bitmap data snapshots of enemy movieclip frames</span></span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> enemy1Vector<span style="color: #000000; font-weight: bold;">:</span>Vector.<span style="color: #000000; font-weight: bold;">&lt;</span>BitmapData<span style="color: #000000; font-weight: bold;">&gt;</span> = MovieClipToBitmapData<span style="color: #000000;">(</span>mc<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=movieclip%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:movieclip.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">MovieClip</span></a><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> enemy1TotalFrames<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=uint%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:uint.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">uint</span></a> = enemy1Vector.<span style="color: #004993;">length</span>;</span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> enemy1Index<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=uint%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:uint.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">uint</span></a> = <span style="color: #000000; font-weight: bold;">0</span>;</span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> enemy1Bitmap<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=bitmap%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:bitmap.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Bitmap</span></a> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=bitmap%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:bitmap.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Bitmap</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #009900;">//create sprite container so the enemy will respond on mouse events</span></span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> enemy1<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">enemy1.<span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>enemy1Bitmap<span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//then later in the game</span></span>
+<span style="vertical-align: top;"><span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">ENTER_FRAME</span>, enterFrameHandler<span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #339966; font-weight: bold;">function</span> enterFrameHandler<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>enemy1Index == enemy1TotalFrames<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">      enemy1Index = <span style="color: #000000; font-weight: bold;">0</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">else</span></span>
+<span style="vertical-align: top;">      enemy1Index<span style="color: #000000; font-weight: bold;">++</span>;</span>
+<span style="vertical-align: top;">   enemy1Bitmap.<span style="color: #004993;">bitmapData</span> = enemy1Vector<span style="color: #000000;">[</span>enemy1Index<span style="color: #000000;">]</span>;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<div style="text-align: justify;">Of course if you have more enemies/objects, then you would probably need to create a global vector of bitmapData vectors.</div>
+<h3><br />TIP 3: Pause game when it is moved to background (when user switches to other app or receives a call)</h3>
+<p style="text-align: justify;">This is (or should be) a feature of every action game. If your game doesn't pause when it is moved to the background, it may be rejected at submission process to AppStores which review apps. Just imagine what would happen if Jumping Droid wasn't going
+    into pause mode when the game loses focus as a result of incoming call or because the user pressed the hardware Home button that brings to a phone desktop. If the user managed to get to one of the top floors in the game, he/she would need to start
+    from the ground floor again when coming back to the game as the droid guy would fall on the lowest floor in the meantime. You would also still hear sounds from the game. But more importantly, running app would heavily use CPU, what would obviously
+    have impact on other applications performance and overall energy consumption. To remedy this situation, just listen for the Event.ACTIVATE and Event.DEACTIVATE events and create function to pause and unpause your game.</p>
+<p style="text-align: center;"><img src="http://sierakowski.eu/examples/jumpingDroidOptimization/jumpingDroidPaused.jpg" alt="Jumping Droid paused screen." /></p>
+<p style="text-align: justify;">In Jumping Droid I left the users with option to pause when pressing the hardware Menu key on Android or the Menu screen button on iOS. At the pause state, the frame rate is dropped and I unregister the main ENTER_FRAME event handler so all animation
+    and other related processes are stopped. If the game was moved to the background and is back to the foreground, the user sees the pause screen and options menu and can either continue the game or quit.</p>
+<p>Sample code below:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #009900;">//somewhere in my init function </span></span>
+<span style="vertical-align: top;">NativeApplication.nativeApplication.<span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.ACTIVATE, </span>
+<span style="vertical-align: top;">                                      handleActivate, <span style="color: #0033ff; font-weight: bold;">false</span>, <span style="color: #000000; font-weight: bold;">0</span>, <span style="color: #0033ff; font-weight: bold;">true</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">NativeApplication.nativeApplication.<span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">DEACTIVATE</span>, </span>
+<span style="vertical-align: top;">                                      handleDeactivate, <span style="color: #0033ff; font-weight: bold;">false</span>, <span style="color: #000000; font-weight: bold;">0</span>, <span style="color: #0033ff; font-weight: bold;">true</span><span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #339966; font-weight: bold;">function</span> handleActivate<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #009900;">//This code is executed when application gets back focus / goes to foreground</span></span>
+<span style="vertical-align: top;">   <span style="color: #009900;">//I do nothing here and leave it up to the user to press </span></span>
+<span style="vertical-align: top;">   <span style="color: #009900;">//the "back to game" button in pause/options menu.</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;"><span style="color: #339966; font-weight: bold;">function</span> handleDeactivate<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #009900;">//This code is executed when application looses focus / goes to background</span></span>
+<span style="vertical-align: top;">   stopGame<span style="color: #000000;">(</span><span style="color: #000000;">)</span>; <span style="color: #009900;">//this also changes frame rate to 10</span></span>
+<span style="vertical-align: top;">   showPauseScreen<span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">   showOptionsMenu<span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Note that the NativeApplication events are working only in AIR (they aren't available in standard web Flash).</p>
+<p>&nbsp;</p>
+<h3>TIP 4: Make object's frames switching independent of current frame rate</h3>
+<p style="text-align: justify;">I set Jumping Droid frame rate to be 100 fps. Of course that kind of speed is only achievable on desktop computers at the moment :) But the game works 60 fps on iPhone 3, 56 fps on Samsung Galaxy and 30 fps on HTC Desire, so as you can see I'm fully utilising
+    all those devices. The problem is that normally that kind of dynamic frame rate would affect objects animations, in example if game was designed to work with 30 fps but runs with 60 fps, animation would be two times faster (when saying animation I
+    mean switching frames of these objects). We don't want our objects to animate slower on some devices and faster on others. That would look ridiculous if enemy was moving slowly but its legs would suggest that it's actually running couple times faster.
+    My aim was to animate all objects the same way on all devices.</p>
+<p style="text-align: justify;">Animations of running enemies were created for 30 frames per second so this is going to be my base value. The code below switches bitmap's bitmap data only after specified amount of time, which is 1/30 s in my case, rather than every at enter-frame event:</p>
+<p style="text-align: justify;">&nbsp;</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #009900;">//define original game frame rate - this is a frame rate</span></span>
+<span style="vertical-align: top;"><span style="color: #009900;">//for which you created original animation</span></span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">public</span> static const GAME_ORG_FRAME_RATE<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000; font-weight: bold;">30</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> frameTime<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000; font-weight: bold;">1000</span> <span style="color: #000000; font-weight: bold;">/</span> GAME_ORG_FRAME_RATE;</span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> _time<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000; font-weight: bold;">0</span>;</span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> _elapsedAnimation<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000; font-weight: bold;">0</span>;</span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> _animate<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=boolean%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:boolean.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Boolean</span></a>;</span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//than later in your game in enterFrame handler</span></span>
+<span style="vertical-align: top;"><span style="color: #339966; font-weight: bold;">function</span> animationMaker<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   _time = <span style="color: #004993;">getTimer</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">   <span style="color: #009900;">//animate only if 1/30s elapsed since last check</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_time <span style="color: #000000; font-weight: bold;">-</span> _elapsedAnimation <span style="color: #000000; font-weight: bold;">&gt;</span> frameTime<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      _elapsedAnimation = _time;</span>
+<span style="vertical-align: top;">      _animate = <span style="color: #0033ff; font-weight: bold;">true</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">else</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      _animate = <span style="color: #0033ff; font-weight: bold;">false</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">   <span style="color: #009900;">//this could be a for loop to animate more than one objects/enemies...</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_animate<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>enemy1BitmapFrameCounter == enemy1Vector.<span style="color: #004993;">length</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">         enemy1BitmapFrameCounter = <span style="color: #000000; font-weight: bold;">0</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">else</span></span>
+<span style="vertical-align: top;">         enemy1BitmapFrameCounter<span style="color: #000000; font-weight: bold;">++</span>;</span>
+
+<span style="vertical-align: top;">      enemy1Bitmap.<span style="color: #004993;">bitmapData</span> = enemy1Vector<span style="color: #000000;">[</span>enemy1Index<span style="color: #000000;">]</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<h3>TIP 5: Make object's movement independent from current frame rate using time-based application</h3>
+<p style="text-align: justify;">Same as with objects frame switching, we don't want our hero or enemies moving faster across the screen on some devices and slower on others. So we can't just use ENTER_FRAME event to control x and y of screen objects. Instead I'm using a technique called
+    time-based animation. Using it, it doesn't matter what frame rate game is running, objects will move the same speed as their position is calculated based on how much time has passed since the last step. First I save current time, then at a next ENTER_FRAME
+    or TIMER_UPDATE update I check current time and calculate a difference between them. The bigger the difference is, the bigger the distance that object will make.</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #009900;">//240 is calculated from 8 * 30 </span></span>
+<span style="vertical-align: top;"><span style="color: #009900;">//   where 8 is number of pixels I wanted an object to move</span></span>
+<span style="vertical-align: top;"><span style="color: #009900;">//   when frame rate was 30</span></span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">public</span> static const VELOCITY_ORG_HORIZONTAL<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000; font-weight: bold;">240</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #6699cc; font-weight: bold;">var</span> _lastTimeCheck<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000; font-weight: bold;">0</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//then later I calculate the new speed depending on a screen size</span></span>
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> velH<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = VELOCITY_ORG_HORIZONTAL <span style="color: #000000; font-weight: bold;">*</span> rescaleRatio;</span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;"><span style="line-height: 21px;">I recalculate the velocity to be slower on small screens and faster on bigger screens using my rescaleRatio variable from the tip #2. This way the game won't be easier for owners of bigger devices.</span></p>
+<p>&nbsp;</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">ENTER_FRAME</span>, updateObjects<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #009900;">//you could also use Timer and TimerEvent</span></span>
+
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #339966; font-weight: bold;">function</span> updateObjects<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #6699cc; font-weight: bold;">var</span> timeDifference<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a> = <span style="color: #000000;">(</span><span style="color: #004993;">getTimer</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span> <span style="color: #000000; font-weight: bold;">-</span> _lastTimeCheck<span style="color: #000000;">)</span> <span style="color: #000000; font-weight: bold;">*</span> <span style="color: #000000; font-weight: bold;">0.001</span>;</span>
+<span style="vertical-align: top;">   _lastTimeCheck <span style="color: #000000; font-weight: bold;">+</span>= timeDifference;</span>
+
+<span style="vertical-align: top;">   <span style="color: #009900;">//move my all objects, this could be a for loop</span></span>
+<span style="vertical-align: top;">   hero.<span style="color: #004993;">x</span> <span style="color: #000000; font-weight: bold;">+</span>= velH <span style="color: #000000; font-weight: bold;">*</span> timeDifference;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Now you can set your game fps in Flash to be even 100. If game will be running 20 fps, animation won't be that smooth as on faster phones but objects will move at the same speed as on device performing 80 fps.</p>
+<p>&nbsp;</p>
+<h3 style="line-height: 26px;">TIP 6: Dynamically reduce frame rate when high frame rate is not necessary</h3>
+<p style="text-align: justify;">Sure, game animation looks much better when running 60 frames per second. Everything looks smooth and objects movement isn't jittery. But the drawback is the fact that the high frame rate consumes more power. There is nothing wrong if the frame rate is
+    high at the game play. But it is not necessary when the user paused the game or moved to one of the menu screens. You can then dynamically change the frame rate to 10 or even lower - as it is sufficient for buttons animation and will save battery.</p>
+<p style="text-align: center;"><img src="http://sierakowski.eu/examples/jumpingDroidOptimization/jumpingDroidDynamicFrameRate.png" alt="Jumping Droid dynamic frame rate" /></p>
+<p style="line-height: 26px;">First I save the original frame rate value. I define 10 frames per second as a constant. Using both values I dynamically switch the frame rate depending on what state the game is currently in.</p>
+<div class="rj_insertcode" style="line-height: 26px;">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #009900;">//define low frame rate</span></span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">public</span> static const LOW_FRAME_RATE<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=uint%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:uint.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">uint</span></a> = <span style="color: #000000; font-weight: bold;">10</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//somewhere in my init function:</span></span>
+<span style="vertical-align: top;"><span style="color: #009900;">//remember initial frame rate</span></span>
+<span style="vertical-align: top;">initialFrameRate = <span style="color: #004993;">stage</span>.<span style="color: #004993;">frameRate</span>;</span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//somewhere in the code depending on the game's current state:</span></span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">switch</span> <span style="color: #000000;">(</span>gameState<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">case</span> STATE_PAUSE<span style="color: #000000; font-weight: bold;">:</span></span>
+<span style="vertical-align: top;">      <span style="color: #009900;">//...some other stuff</span></span>
+<span style="vertical-align: top;">      <span style="color: #004993;">stage</span>.<span style="color: #004993;">frameRate</span> = LOW_FRAME_RATE;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">break</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">case</span> STATE_MENU<span style="color: #000000; font-weight: bold;">:</span></span>
+<span style="vertical-align: top;">      <span style="color: #009900;">//...some other stuff</span></span>
+<span style="vertical-align: top;">      <span style="color: #004993;">stage</span>.<span style="color: #004993;">frameRate</span> = LOW_FRAME_RATE;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">break</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">case</span> STATE_PLAY<span style="color: #000000; font-weight: bold;">:</span></span>
+<span style="vertical-align: top;">      <span style="color: #009900;">//...some other stuff</span></span>
+<span style="vertical-align: top;">      <span style="color: #004993;">stage</span>.<span style="color: #004993;">frameRate</span> = initialFrameRate;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">break</span>;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p style="line-height: 26px;">&nbsp;</p>
+<p style="text-align: justify;"><span style="line-height: 21px;">According to the documentation, the mobile versions of AIR (2.5) and Flash Player (10.1) have built - in functionality to drop the frame rate to 4 fps and skip rendering step when application goes to the background. This applies to a Flash Player content that loses focus, ie. if user scrolled a web page and Flash content is not visible anymore. You may be thinking why to 4 fps not zero? In Flash Player, instructions are only executed at frame change and that minimal frame rate allows to keep net streams and net or socket connections if they are created.</span></p>
+<div><span style="line-height: 26px;"><span style="line-height: 21px;">&nbsp;</span></span>
+</div>
+<h3>TIP 7: Don't let users wait too long, split heavy tasks into chunks</h3>
+<p style="text-align: justify;">Bitmap caching is a very expensive process, if your game has many levels with different backgrounds and you want to cache them all to bitmapDatas as a first thing after game is loaded, then don't do that. Jumping Droid has 20 levels and it takes about
+    10 - 15 seconds to cache all of the backgrounds on iPhone 3. I think that 15 seconds is enough time for the user to get bored or think that your game just hanged or crashed. So it is better to split this task into parts and do them separately. I cache
+    every next-level bitmap just after the user completes a current level. The whole game stops, the droid guy says congratulations and after a second or two the game moves to the "next level" screen. I think that the user think this pause is actually
+    intentional, just to give her/him some time to rest :) but in fact I'm just caching another bitmap (if it wasn't cached already)! Caching process is so heavy that your app may even freeze at that time of doing this (multithreading would be a great
+    cure for that). Remember to store your bitmapData in a Vector and reuse it - one bitmapData can be used on many bitmap objects.</p>
+<p style="text-align: justify;">You should also avoid creating (instantiating) objects at game-play, as this may result in frame drops, animation may become choppy. It is better to create all objects that may be used beforehand, when generating a new level, make them invisible and don't
+    "plug" them to any listeners or functions that will change their x, y, rotation, listeners or other properties, until they are enabled. Then when you need them, just turn their visibility on.</p>
+<p style="text-align: justify;">When launching your game on iPhone you can also use Default.png splash screen to have something on the screen (like you company logo or game image) when game is loading into memory. There is no such option for Android at the moment.</p>
+<p style="text-align: justify;">If you game is big, you could actually split it into multiple swfs, package them together and load these external assets when necessary from your main "shell" file. Just remember that on iOS no ActionSctipt code will be executed from any external swf.
+    To be more precise, if you try to load a swf with AS code or even a class assigned to some DisplayObject, the loading process will fail silently... But remember, you can still load graphic assets (they can have instance names), sound clips or videos
+    and you can use your code from the main swf (loader) to work with these assets.</p>
+<p>&nbsp;</p>
+<h3>TIP 8: Allow users to install their apps on SD card (Android only)</h3>
+<p style="text-align: justify;">I'm surprised that Adobe still haven't added any tick box to set that in Publish settings in the Flash Professional! Even Adobe evangelists never mention how to use this very important feature. Just look at the comments of most of the AIR for Android
+    games or apps, the users mostly complain about lack of "Move to SD" option. While Motorola and Samsung phones have plenty of internal memory, HTC Desire, still very popular Android 2.2 phone, has very limited space. If the users installed Adobe AIR
+    (17 MB) and Adobe Flash (12 MB) that can't be moved to SD for obvious reasons (if they were on SD and SD was removed or device was plugged as a disk drive then these both wouldn't be available along with all apps that require them), they won't be
+    happy to keep other apps on their internal memory if they are running out of space. But there is nothing stopping you to make your app movable to SD. Remember, if the user is struggling with "out of space" messages, she/he will move your app to SD
+    rather than remove it.</p>
+<p style="text-align: justify;">Read this article to learn more: <span style="line-height: 26px;"><a href="list-of-tips/78-how-to-make-air-for-android-app-movable-to-sd-card.html" target="_blank">http://sierakowski.eu/list-of-tips/78-how-to-make-air-for-android-app-movable-to-sd-card.html</a>.</span></p>
+<p><span style="line-height: 26px;">&nbsp;</span></p>
+<h3>TIP 9: TextFields and objects receiving mouse events are slowing down performance</h3>
+<p style="text-align: justify;">Especially when used in GPU mode. TextFields are like vectors, it seems like they are recalculated at every frame if something overlaps them or if they overlap something else, especially animated objects. I tried to embed fonts, used native font and always
+    their existence had some impact on performance. What I did and what other developers do is create bitmaps of each character or digit that might be used. In case of Jumping Droid, I have the current score and the high score fields, which include digits
+    and 4 letters HI and SC. I convert sprites with text fields containing all possible values to bitmaps and then get rid of all text fields. It is a little bit of work, but as a result, performance is exactly the same as if I would add few more bitmaps,
+    there are no vectors on the stage.</p>
+<p style="text-align: justify;">Situation complicates when you want to have some input text fields, but just one or few fields will not totally kill your game's performance.</p>
+<p style="text-align: justify;">I recently found that TextFields don't have that negative impact in AIR 2.7 when using CPU mode.</p>
+<p style="text-align: justify;">If you have objects that aren't reacting on MouseEvents, you should disable them as the FlashPlayer is still bubling events through them "thinking" they may receive this events what obviously have impact on performance:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #004993;">mouseEnabled</span> = <span style="color: #0033ff; font-weight: bold;">false</span>;</span>
+<span style="vertical-align: top;"><span style="color: #004993;">mouseChildren</span> = <span style="color: #0033ff; font-weight: bold;">false</span>;</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h3>TIP 10: Control your memory and use garbage collector</h3>
+<p style="text-align: justify;">When testing your game on actual device, it is good to use some tool that shows memory usage and fps. Some people use the standard AIR debugger and trace these values, others third party solutions like Monster Debugger. Or you can just display this information
+    on screen. I initially used MrDoobs <a href="https://github.com/mrdoob/Hi-ReS-Stats" target="_blank">Hi-ReS-Stats</a>but quickly adjusted (simplified) it to meet my needs. Using this performance monitor, I learned what has impact on fps, why it was
+    dropping sometimes and realised that from time to time game kept too many objects in memory:</p>
+<p style="text-align: center;"><img src="http://sierakowski.eu/examples/jumpingDroidOptimization/performanceMonitor.jpg" alt="Jumping Droid paused screen." /></p>
+<p style="text-align: justify;">In my version of performance monitor, I display the minimum, current and maximum memory used and a current frame rate (if you want to check it in JumpingDroid, go to the main screen, then to the about screen and press the "turn fps info on" button). When
+    testing the game I found that some objects from previous levels still occupied memory. Generally garbage collector removes all unused objects when there is some spare time between rendering frames (if game isn't too busy). If there are many calculations,
+    like if there are many objects on the screen and you have some heavy collision detection algorithm, it should not fire up. But sometimes it does and you can see it in some frame drops. What I do is manually call garbage collector when a level is finished
+    at the congratulations screen - there is no animation at that time, so the user won't notice any slow down.</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #004993;">flash.system</span>.<a href="http://www.google.com/search?q=system%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:system.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">System</span></a>.gc<span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Generally the best practise is to do not create and remove the same objects at every level but rather reuse them (ie by using object pools). But if there are different objects used on each level then it is fine to "collect garbage" like unnecessary enemies
+    etc.</p>
+<p>&nbsp;</p>
+<h3>TIP 11: Keep game awake</h3>
+<p style="text-align: justify;">Or I should rather say prevent the system from dropping into an idle mode. This one is important as if you forget to make your game be constantly awake, device's screen will just dim off (turn black) when there is some inactivity time. This will happen
+    when the user don't tap screen or hardware keys for some time. This time is obviously different depending on OS or user settings. Tilting device when using accelerometer is not counted as activity.</p>
+<p>To prevent screen from dimming and keyboard from being locked use the following code:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">NativeApplication.nativeApplication.systemIdleMode = SystemIdleMode.KEEP_AWAKE;</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">On Android version, add the following permission to the application descriptor file:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>uses<span style="color: #000000; font-weight: bold;">-</span>permission android<span style="color: #000000; font-weight: bold;">:</span><span style="color: #004993;">name</span>=<span style="color: #990000;">"android.permission.DISABLE_KEYGUARD"</span><span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>uses<span style="color: #000000; font-weight: bold;">-</span>permission android<span style="color: #000000; font-weight: bold;">:</span><span style="color: #004993;">name</span>=<span style="color: #990000;">"android.permission.WAKE_LOCK"</span><span style="color: #000000; font-weight: bold;">/&gt;</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<h3>TIP 12: Save game state</h3>
+<p style="text-align: justify;">Imagine user's frustration if just after winning some battle or getting almost to the end of a level, an incoming call quit the game. This is no brainer - game state has to be saved. You can use the DEACTIVATE event from the tip #3 to call function saving
+    game settings and progress. But it is also a good practice to save them also when something important happens like beating some difficult monster or just do auto save every minute as there might be some extraordinary situation when phone hangs or
+    resets without event notifying running apps (and you won't receive DEACTIVATE event).</p>
+<p style="text-align: justify;">There are few good ways of saving your state and you can chose one depending on how much data you want to save. You can use old good Shared Object aka flash cookies, you can save to a file (AIR can do that), you can use built-in into AIR SQLLite or even
+    send data to a remote server.</p>
+<p style="text-align: justify;">In Jumping Droid I decided to only save the high score. This is very low amount of data so Shared Objects seemed to be the best choice:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #6699cc; font-weight: bold;">var</span> _so<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sharedobject%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sharedobject.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">SharedObject</span></a>;</span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//in your init function</span></span>
+<span style="vertical-align: top;">_so = <a href="http://www.google.com/search?q=sharedobject%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sharedobject.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">SharedObject</span></a>.<span style="color: #004993;">getLocal</span><span style="color: #000000;">(</span><span style="color: #990000;">"JumpingAndroid/scores"</span>, <span style="color: #990000;">"/"</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_so.<span style="color: #004993;">data</span>.highScore == <span style="color: #0033ff; font-weight: bold;">undefined</span><span style="color: #000000;">)</span> _lastHighScore = _so.<span style="color: #004993;">data</span>.highScore;</span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//and later on game over:</span></span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_highScore <span style="color: #000000; font-weight: bold;">&gt;</span> _lastHighScore<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">  _so.<span style="color: #004993;">data</span>.highScore = _lastHighScore = _highScore;</span>
+<span style="vertical-align: top;">  _so.<span style="color: #004993;">flush</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">On Android version add this permission to the application descriptor file:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>uses<span style="color: #000000; font-weight: bold;">-</span>permission android<span style="color: #000000; font-weight: bold;">:</span><span style="color: #004993;">name</span>=<span style="color: #990000;">"android.permission.WRITE_EXTERNAL_STORAGE"</span><span style="color: #000000; font-weight: bold;">/&gt;</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<h3>TIP 13: Terminate or quit when exiting?</h3>
+<p style="text-align: justify;">On iOS you can't make application quit programmaitically. Only the user may do that by pressing the hardware Home button what would result in suspending or quitting the application.</p>
+<p style="text-align: justify;">On Android if the user presses hardware Home or Back button it will bring her/him to the Android home screen and application will be suspended. Then when the user comes back to the app (if the device wasn't restarted or app wasn't killed from programs
+    like Advanced Task Killer or Android settings panel) it continues from where it was quit.</p>
+<p style="text-align: justify;">So on both systems you can either quit your game or suspend it (by default they are suspended).</p>
+<p style="text-align: justify;">To quit on iOS, add UIApplicationExitsOnSuspend to the iPhone InfoAddition section of you application descriptor file:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>iPhone<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>InfoAdditions<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000; font-weight: bold;">&lt;!</span><span style="color: #000000;">[</span>CDATA<span style="color: #000000;">[</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>key<span style="color: #000000; font-weight: bold;">&gt;</span>UIApplicationExitsOnSuspend<span style="color: #000000; font-weight: bold;">&lt;/</span>key<span style="color: #000000; font-weight: bold;">&gt;&lt;</span>string<span style="color: #000000; font-weight: bold;">&gt;</span>YES<span style="color: #000000; font-weight: bold;">&lt;/</span>string<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000;">]</span><span style="color: #000000;">]</span><span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;/</span>InfoAdditions<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;/</span>iPhone<span style="color: #000000; font-weight: bold;">&gt;</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">To quit on Android, use exit() method of nativeApplication property of NativeApplication class in your game code:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">NativeApplication.nativeApplication.exit<span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">You should add this code to your DEACTIVATE event handler from tip #1 and you can also create a quit button and add this code to a Click handler.</p>
+<h3>TIP 14: Use subversioning to save yourself hassle</h3>
+<p style="text-align: justify;">I can't even remember how many times something didn't work in the game the way I wanted or the performance wasn't good enough and I had to come back to a version from two weeks before. Not to mention that something corrupted in the FLA file and I had
+    to revert back to last stable version. Really I can't imagine working on bigger projects without Subversioning. Since Flash CS5 you can save uncompressed FLA files which are just folders with xml files containing information of each library object
+    and settings. So now I'm not only subversion ActionScript files but also FLAs. There are many tutorials on internet explaining how to use Git or SVN so if you haven't use them yet - ow is the best time to start :) (I'm thinking of making some quick
+    tutorial on using SVN with Flash soon).</p>
+<h3>TIP15: Use Remote Debugging over WiFi to see traces from your app running on a device</h3>
+<p style="text-align: justify;">Making your app sending traces remotely to your computer is very easy and will help you finding any problems that couldn't be detected when testing on your computer. There are three things that are involved to accompilish this:</p>
+<p>1. You need to publish your swf including the debug code from Flash IDE<br /> In Flash CS5 and CS5.5 go to Publish Settings, Flash tab and check Permit Debugging in Advanced section.</p>
+<p>2. You need to use adt tool with -target ipa-debug<br /> You can also predefine IP address of your debugging computer instead of typing it manually at application launch on a device: adt -package -target ipa-debug -connect 192.168.1.4</p>
+<p>3. Your device and computer must be in the same wifi network and you computer's firewall should allow TCP traffic on port 7935. To start debugging session in Flash IDE select Debug -&gt; "Begin Remote Debug Session" -&gt; ActionScript 3.0</p>
+<p style="text-align: justify;">Rember to start debugging in Flash IDE before launching your app on a device, otherwise you will be asked to provide IP of the computer even if you provided -connect parameter to adt. If everything is done right you should see traces from your app running
+    from you phone or tablet in the Flash output panel as if it was running on your computer!</p>
+<p>&nbsp;</p>
+<h3 style="line-height: 26px;">TIP16: Test how much CPU your app is using on actual devices</h3>
+<p style="text-align: justify;">I don't know how to do that on iOS but it is very easy on Android with android-sdk. All you need to do is plug your Android device to a computer in Debug mode. You do that on your phone or tablet by going to Settings -&gt; Applications -&gt; Development
+    and selecting "USB debugging". Then on your computer open command prompt (cmd), go to you Android SDK folder, platform-tools folder and run this command:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">adb shell <span style="color: #004993;">top</span> <span style="color: #000000; font-weight: bold;">-</span>m <span style="color: #000000; font-weight: bold;">5</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">The -m 5 you define that you are going to see first top 5 processes sorted by CPU usage. When running this command you should see a list of processes refreshed every coumple of seconds:</p>
+<p><img src="http://sierakowski.eu/examples/jumpingDroidOptimization/cpuandroid.jpg" alt="cpu android" /></p>
+<p>&nbsp;</p>
+<h3 style="line-height: 26px;">TIP17: Use Native Extensions to get extra functionality not built into AIR</h3>
+<p style="text-align: justify;">There is plenty of documentation on how to use Native Extensions in Flash Builder or in the latest version of Flash Professional CS6. I normally use Flash Builder but I developed Jumping Droid in Flash Professional CS5.5 so I will share here how I added
+    the vibration support to the game.</p>
+<p>1. Download Vibration extension from the Native Extensions catalogue on Adobe website: <a href="http://www.adobe.com/devnet/air/native-extensions-for-air/extensions/vibration.html">http://www.adobe.com/devnet/air/native-extensions-for-air/extensions/vibration.html</a></p>
+<p>2. Unzip archive and get the swc and ane files from the ReadyToUseExtenstion folder.</p>
+<p>3. In Flash IDE, open ActionScript settings and in Library path add a new SWC file by browsing to VibrationActionScriptLibrary.swc. After that keeping the swc selected click on the "i" icon what opens the "Library Path Item Options". Make sure the "Link
+    Type" is set to External.</p>
+<p>4. Now in your code first import the Vibration class:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">import</span> com.adobe.nativeExtensions.Vibration;</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>5. And then add the code to check if device allows Vibration and run it:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> vibe<span style="color: #000000; font-weight: bold;">:</span>Vibrator;</span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">if</span><span style="color: #000000;">(</span>Vibration.isSupported<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">     vibe = <span style="color: #0033ff; font-weight: bold;">new</span> Vibration<span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">     vibe.vibrate<span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">500</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>6. When you compile your swf you should get an error message that extension isn't supported on this platform which is fine.</p>
+<p>7. In your application descriptor add the extension as below:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>extensions<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>extensionID<span style="color: #000000; font-weight: bold;">&gt;</span>com.adobe.Vibration<span style="color: #000000; font-weight: bold;">&lt;/</span>extensionID<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;/</span>extensions<span style="color: #000000; font-weight: bold;">&gt;</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>8. And then also request permission for vibration:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;!</span><span style="color: #000000;">[</span>CDATA<span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">&lt;</span>manifest<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>uses<span style="color: #000000; font-weight: bold;">-</span>permission android<span style="color: #000000; font-weight: bold;">:</span><span style="color: #004993;">name</span>=<span style="color: #990000;">"android.permission.VIBRATE"</span><span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;/</span>manifest<span style="color: #000000; font-weight: bold;">&gt;</span><span style="color: #000000;">]</span><span style="color: #000000;">]</span><span style="color: #000000; font-weight: bold;">&gt;</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>9. Now create the "extensions" folder in the same place where you keep your swf, descriptor and icons and place the com.adobe.extensions.Vibration.ane file in there.</p>
+<p>10. Add below to your batch script that you use to publish your AIR app with ADT. This will include the ane file as a native extension.</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">-</span>extdir extensions</span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<h3>FINAL TIP: Share your experience with others on forums! Only this way we can learn from each other and improve our apps.</h3>
+<p style="text-align: justify;">If you have different experience with any of the things in this article, please share it with us through the comments!</p>
+<p></p>
+<p></p>
+<div id="jc">
+    <div id="comments">
+        <h4>Comments imported from the original article @sierakowski.eu</h4>
+        <div id="comments-list" class="comments-list">
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#38</a> <span class="comment-author">Sun</span> <span class="comment-date">2014-03-17 06:00</span>
+                            <div id="comment-body-199" class="comment-body">I have a question about the tip#2.<br />So why did you convert everything(imag es?) from movieclip to bitmap?<br />what about sprite? do you convert sprite types to bitmap as well? <br /><br />Thanks in advance!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#37</a> <span class="comment-author">Wade</span> <span class="comment-date">2013-12-02 22:28</span>
+                            <div id="comment-body-195" class="comment-body">I had thought about the tip for using ACTIVATE and DEACTIVATE for knowing when my app was interrupted by a phone call, but there is 1 flaw in relying on those two events. If the user is using a headset to talk and switches
+                                back to the app in the middle of the call, you could be attempting to resume audio playback on top of the phone call audio. I have been doing endless searches of a way to pause audio in my Audiobook Player app I am making(since
+                                AIR mutes all audio during an incoming phone call and while on a call) and it looks like I will have to just make an ANE using native Android Java code to detect phone call states. I also tried checking the SoundMixer.soundTransform.volume
+                                during an ongoing phone call to see if it changed to "0" and hoped that was how AIR was "muting" audio, but that was not the case.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#36</a> <span class="comment-author">xiaoMa</span> <span class="comment-date">2013-11-14 07:15</span>
+                            <div id="comment-body-193" class="comment-body"><span class="quote">Quoting Marcos:</span>
+                                <blockquote>Hi... Im working in an AIR project for Android. I did step by step everything you say in this post but I still cannot make the phone vibrate. I have an error when I try to debug directly to device:<br />"An implementation
+                                    for native extension 'com.adobe.Vibration' required by the application was not found for the target platform'<br /><br />I dont know exactly what it means... can you help me??<br /><br />(Sorry about my english)...<br
+                                    /><br />Regards...</blockquote>
+                                <br />ANE path is wrong</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#35</a> <span class="comment-author">Germ&aacute;n</span> <span class="comment-date">2013-07-03 16:23</span>
+                            <div id="comment-body-185" class="comment-body">Thanks!<br /><br />In case of using a set of images for popular resolutions and then scale them.<br /><br />Do you know if the usual practice is to embed all of these sets, even if just only one of them is used? Is there an
+                                efficient way to do it? <br /><br />Regards<br /><br /><span class="quote">Quoting sigman:</span>
+                                <blockquote>Hi German,<br /><br />Yes, every asset is vector. Android animation is actually a vector movie clip and in AS code I go through each frame, resize it and take bitmap snapshots of resized frames.<br /><br />Good luck.<br
+                                    /><br /><span class="quote">Quoting Germ&aacute;n:</span>
+                                    <blockquote>Hi,<br /><br />Great article, just one question. I didn't quite understood if you use vectors even for your animations (i.e. little droid in game), resized them dynamically and the converted them to bitmap. Or if these
+                                        animations were already sprite sheets in bitmap format and you scale them dinamically loosing some quality? Thanks</blockquote>
+                                </blockquote>
+                            </div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#34</a> <span class="comment-author">sigman</span> <span class="comment-date">2013-07-01 19:30</span>
+                            <div id="comment-body-184" class="comment-body">Hi German,<br /><br />Yes, every asset is vector. Android animation is actually a vector movie clip and in AS code I go through each frame, resize it and take bitmap snapshots of resized frames.<br /><br />Good luck.<br /><br
+                                /><span class="quote">Quoting Germ&aacute;n:</span>
+                                <blockquote>Hi,<br /><br />Great article, just one question. I didn't quite understood if you use vectors even for your animations (i.e. little droid in game), resized them dynamically and the converted them to bitmap. Or if these
+                                    animations were already sprite sheets in bitmap format and you scale them dinamically loosing some quality? Thanks</blockquote>
+                            </div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#33</a> <span class="comment-author">Germ&aacute;n</span> <span class="comment-date">2013-07-01 17:11</span>
+                            <div id="comment-body-183" class="comment-body">Hi,<br /><br />Great article, just one question. I didn't quite understood if you use vectors even for your animations (i.e. little droid in game), resized them dynamically and the converted them to bitmap. Or if these animations
+                                were already sprite sheets in bitmap format and you scale them dinamically loosing some quality? Thanks</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#32</a> <span class="comment-author">YopSolo</span> <span class="comment-date">2013-04-22 12:13</span>
+                            <div id="comment-body-179" class="comment-body">great tip collection !</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+2</span> </span>
+                            </span> <a class="comment-anchor">#31</a> <span class="comment-author">Horacio</span> <span class="comment-date">2013-02-19 00:31</span>
+                            <div id="comment-body-174" class="comment-body">I just learned the hard way most of this making my first android app, didn&acute;t take me too long but things that I didn&acute;t know will make me do it more easy, great article!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+2</span> </span>
+                            </span> <a class="comment-anchor">#30</a> <span class="comment-author">Marcos</span> <span class="comment-date">2013-02-12 00:18</span>
+                            <div id="comment-body-173" class="comment-body">Hi... Im working in an AIR project for Android. I did step by step everything you say in this post but I still cannot make the phone vibrate. I have an error when I try to debug directly to device:<br />"An implementation for
+                                native extension 'com.adobe.Vibration' required by the application was not found for the target platform'<br /><br />I dont know exactly what it means... can you help me??<br /><br />(Sorry about my english)...<br /><br
+                                />Regards...</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#29</a> <span class="comment-author">Sean P Smith</span> <span class="comment-date">2013-01-24 22:38</span>
+                            <div id="comment-body-169" class="comment-body">Just FYI for anyone trying to get the vibration working, and Sierakowski, there is an error in the code, when you init the var vibe you type it as vibrator and then create a new instance of Vibration(). It should just be var
+                                vibe:Vibration... that was the least of my troubles getting that to work. Anyone trying to use ADT for the first time, make sure to put all your paths (full paths to your files) in quotes... whew!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#28</a> <span class="comment-author">Rotem</span> <span class="comment-date">2013-01-15 09:12</span>
+                            <div id="comment-body-164" class="comment-body">Interesting post.<br />About tip #2 (well.. and the final one) - we created library which does exactly that. It allow converting vector images into bitmaps. To keep better GPU performances, it pack the bitmaps into big atlas
+                                bitmap which contact multiple images. After generating the bitmaps they can be stored so the next time the app is loaded no converting is needed.<br />Last - It also keep the object tree hierarchy.<br />http://www.xtdstudios.com/dmt.html</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#27</a> <span class="comment-author">Sean Smith</span> <span class="comment-date">2012-09-14 20:12</span>
+                            <div id="comment-body-142" class="comment-body">Thank you sooooo #%&amp;$@ing much for posting this. for taking the time to write all that out and help us out with the code. I'm interested in the gamestate switch function you created, did you write a game state checker function
+                                or something or just a global variable that changes when it gets paused or something? I'm having trouble wrapping my mind around creating a timed framerate and game state function... thanks again, you are too smart!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#26</a> <span class="comment-author">Craij</span> <span class="comment-date">2012-07-09 17:03</span>
+                            <div id="comment-body-136" class="comment-body">Excellent tips. Great guide for in-coming AIR game developers. Personally, I am following atleast 3 of these tips! <img src="http://sierakowski.eu/legacy/jcomments/smiles/laugh.gif" alt=":D" border="0" /> Thanks for doing this.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#25</a> <span class="comment-author">susrut</span> <span class="comment-date">2012-06-14 05:40</span>
+                            <div id="comment-body-131" class="comment-body">Awesome stuff. Thanks for sharing. You rock!!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#24</a> <span class="comment-author">albin</span> <span class="comment-date">2012-06-03 13:40</span>
+                            <div id="comment-body-130" class="comment-body">UIApplicationEx itsOnSuspendYES <br /><br />now should be changed to <br /><br /> UIApplicationEx itsOnSuspend</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#23</a> <span class="comment-author">Steve</span> <span class="comment-date">2012-05-29 22:04</span>
+                            <div id="comment-body-129" class="comment-body">I notice on a HTC one, the standard phone toolbar is still there when the game loads up. It displays notifications, the 3G status, the time and so on?<br />Is it possible to remove this as it it taking up screen real estate.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#22</a> <span class="comment-author">Curtis</span> <span class="comment-date">2012-03-15 05:11</span>
+                            <div id="comment-body-125" class="comment-body">Every paragraph was an "ah-ha" for me. Extremely clear, well-written piece with super-excellent code samples. Thanks for all the work you put into this.<br /><br />I had no idea Air could save data to local files on devices.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#21</a> <span class="comment-author">sigman</span> <span class="comment-date">2012-03-06 20:38</span>
+                            <div id="comment-body-123" class="comment-body">@Andrius, You can build to methods: pause and unpause. In pause, that "un-hooks" the methods that drives a game (unhooking could be some boolean or just removeEventList ener), I memorise current getTimer() to the gamePauseTime
+                                variable. Then in unpause method I use it to calculate proper time: _time = getTimer() - gamePauseTime.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#20</a> <span class="comment-author">Andrius</span> <span class="comment-date">2012-03-05 20:47</span>
+                            <div id="comment-body-122" class="comment-body">Hey, thanks allot for this article it is amazing, I learnt allot from it. But I have one question about tip number 5. How can I pause the game, that means pause every moving objects, and then return to it where I left using
+                                getTimer() function? getTimer() function doesn't have an ability to be paused, so how did you managed to pause jumping robot game?</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#19</a> <span class="comment-author">Fabio</span> <span class="comment-date">2012-02-21 10:22</span>
+                            <div id="comment-body-121" class="comment-body">Great article! <br />Thank you</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#18</a> <span class="comment-author">wojciech</span> <span class="comment-date">2012-02-15 22:40</span>
+                            <div id="comment-body-120" class="comment-body">@Fernando, from my experience saved SO stays when you are upgrading your app. Maybe you are uninstalling and installing again rather than upgrading?</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#17</a> <span class="comment-author">Fernando</span> <span class="comment-date">2012-02-13 23:48</span>
+                            <div id="comment-body-118" class="comment-body">Hi, congratz for the nice article. Very informative. I'am trying to save an highscore with sharedobject, but when i update de app in the device, the data stored in the SO goes away. Do you know how to avoid this? Btw I didnt
+                                test this deploying in the market, but i think that the behaviour will be the same.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#16</a> <span class="comment-author">Qusai87</span> <span class="comment-date">2011-12-22 12:12</span>
+                            <div id="comment-body-111" class="comment-body">Thaaaaaaanks Man , it's really amazing article , it worths every word on it <img src="http://sierakowski.eu/legacy/jcomments/smiles/smile.gif" alt=":-)" border="0" /></div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#15</a> <span class="comment-author">landon</span> <span class="comment-date">2011-08-18 03:46</span>
+                            <div id="comment-body-89" class="comment-body">great post. very informative</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#14</a> <span class="comment-author">Michael</span> <span class="comment-date">2011-08-04 07:58</span>
+                            <div id="comment-body-84" class="comment-body">Thanks a lot for sharing. I am learning new things each day about optimizing Air content for mobile, your tips are a good help. Do you have any tips regarding when to use CPU/GPU? I thought GPU mode was best most of the time,
+                                but my current app (with some fading boxes) improved a lot after switching to GPU mode!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#13</a> <span class="comment-author">woj</span> <span class="comment-date">2011-07-10 19:00</span>
+                            <div id="comment-body-80" class="comment-body"><span class="quote">Quoting Booliam:</span>
+                                <blockquote>(...)<br />So my tip is: If you can split required CPU-heavy work into several parts try to do only a bit of it each frame. In theory the user won't notice that the loading happens in the background. You can also use this
+                                    to make a "loading" screen that doesn't freeze the app.</blockquote>
+                                <br />Interesting idea. The only difficult thing would be to make sure that the tasks invoked at this while loop will not extend it too much. But yes, this is what I'm doing in my current projects as well - splitting list
+                                of tasks into parts and invoke them at different frames. As you said this will ensure that app/game will not freeze for long time</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#12</a> <span class="comment-author">woj</span> <span class="comment-date">2011-07-10 18:50</span>
+                            <div id="comment-body-79" class="comment-body"><span class="quote">Quoting smorrow:</span>
+                                <blockquote>Nice Article - very helpful...<br />In tip 3 : I think you meant<br />"if (enemy1Index == enemy1TotalFrames)"<br />instead of <br />"if (enemy1Index == enemy1Index )"<br />Thanks for your help!<br />:)</blockquote>
+                                <br />Thanks, now it's fixed :)</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#11</a> <span class="comment-author">Alexandre Colella</span> <span class="comment-date">2011-07-02 22:05</span>
+                            <div id="comment-body-76" class="comment-body">Man! Thanks a lot!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#10</a> <span class="comment-author">Booliam</span> <span class="comment-date">2011-06-16 01:55</span>
+                            <div id="comment-body-75" class="comment-body">What I wanted to say was in regards of your tip #6. In my tournament app there may be a lot of data to load on start so I solved that by putting a while loop inside a function that's called each frame. The while loop is allowed
+                                to continue looping as long as not X milliseconds has passed, where X is the expected amount of milliseconds between each frame. At each loop one tournament round is loaded.<br /><br />So my tip is: If you can split required
+                                CPU-heavy work into several parts try to do only a bit of it each frame. In theory the user won't notice that the loading happens in the background. You can also use this to make a "loading" screen that doesn't freeze the
+                                app.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#9</a> <span class="comment-author">Booliam</span> <span class="comment-date">2011-06-16 01:53</span>
+                            <div id="comment-body-74" class="comment-body">Interesting read, I've just started making a few apps for Android using AIR and has discovered the importance of optimizing.<br /><br />The first app was a game I made (just to test) called "Tefris" and at the time of development
+                                I didn't have a phone to run it on! Of course it had full 30 fps on the desktop but when I got a phone I discovered its true sometimes horrible low fps. The game has much physics calculations but I believe the rendering
+                                caused a lot of the framedrop. A valuable lesson, I still haven't done any optimization to it yet since I wanted to move on to new projects but I will eventually.<br /><br />The second (and latest app) is a tool called
+                                "Magic Tournament Wizard". I built it to only load what's needed in order to make it faster, and it saves its state at every change so if a call arrives it can just quit itself. It can still be optimized a lot better though,
+                                but I'm getting the hang of it.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#8</a> <span class="comment-author">smorrow</span> <span class="comment-date">2011-06-15 00:38</span>
+                            <div id="comment-body-73" class="comment-body">Nice Article - very helpful...<br />In tip 3 : I think you meant<br />"if (enemy1Index == enemy1TotalFrames)"<br />instead of <br />"if (enemy1Index == enemy1Index )"<br />Thanks for your help!<br />:)</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#7</a> <span class="comment-author">Robert Winberry</span> <span class="comment-date">2011-06-10 15:34</span>
+                            <div id="comment-body-72" class="comment-body">Great blog..thanks for sharing all the info and speaking of info, would you happen to know how to access the hard keys on a smartphone (droid x) via AS3 Flash CS5..thanks</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#6</a> <span class="comment-author">Scott Southworth</span> <span class="comment-date">2011-06-09 16:13</span>
+                            <div id="comment-body-71" class="comment-body">Hi, great articles thanks! One question:<br />When I try ripping movieclips into bitmap sprite sheets -- the AIR quality LOW setting seems to be making them look quite crappy... How did you manage to maintain quality images
+                                with antialiasing and scaling carried over to the bitmaps?<br /><br />Thanks!<br />Scott</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#5</a> <span class="comment-author">woj</span> <span class="comment-date">2011-06-08 10:14</span>
+                            <div id="comment-body-70" class="comment-body">@sebastian, thanks for comment. I haven't finished this article yet so you can expect more to come :) Just to quickly answer some of your questions. Of course the GPU mode is the only one to use at the moment if you want good
+                                performance and many animated objects on screen. I used standard hitTestPoint detection what didn't have big impact on the game performance. Tip 3 covers what I did to scale graphics. Game was too simple to use any framework
+                                like Flixel so I haven't used any. I packaged game with iPhone packager and AIR 2.5 initially and then with AIR 2.6 and haven't seen significant performance differences / improvements to be honest.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#4</a> <span class="comment-author">Sebastian U</span> <span class="comment-date">2011-06-06 15:35</span>
+                            <div id="comment-body-69" class="comment-body">Hi, Congrats for your game!, regarding this post I think the tittle is confusing though, I'd love to read about your performance optimizations techniques but this tips aren't it, I mean you don't talk about how did you do to
+                                get your app running at 60 fps to begin with, did you use GPU/CPU?, object pooling?, avoid collision functions and such?, scaled graphics? some game framework like flixel or your own functions? limit sprites on screen?
+                                packager used? rendering technique?.<br />If you could share this kind of info it would be really useful, thank you!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#3</a> <span class="comment-author">Tadeu</span> <span class="comment-date">2011-06-02 15:28</span>
+                            <div id="comment-body-68" class="comment-body">Very good article ! thanks !</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#2</a> <span class="comment-author">Natalie</span> <span class="comment-date">2011-06-01 20:50</span>
+                            <div id="comment-body-66" class="comment-body">these tips are time savers! Thanks for sharing and I love your game.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#1</a> <span class="comment-author">Joachim</span> <span class="comment-date">2011-05-29 14:39</span>
+                            <div id="comment-body-65" class="comment-body">Great tips. Now waiting for others!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

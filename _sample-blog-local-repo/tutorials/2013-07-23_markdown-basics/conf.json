@@ -1,0 +1,15 @@
+{
+  "author": {
+    "name": "sigman"
+  },
+  "category": "primers",
+  "content": {
+    "brief": "brief.html",
+    "extended": "extended.md",
+    "extendedType": "md"
+  },
+  "publishedDate": "2013-07-23T00:00:00.000+0000",
+  "state": "published",
+  "tags": ["programming"],
+  "title": "Markdown basics"
+}

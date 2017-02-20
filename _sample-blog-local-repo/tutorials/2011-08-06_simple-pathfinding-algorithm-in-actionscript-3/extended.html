@@ -1,0 +1,595 @@
+<div class="recycle">http://sierakowski.eu/list-of-tips/88-simple-pathfinding-algorithm-in-actionscript-3.html</div>
+<p style="text-align: justify;">I won't copy the whole article from Wikipedia as you can check it out yourself but let me just copy and paste the rules of the simple method that is presented there as an example. This is the most basic algorithm, I remember learning when I was a student
+    some more complex algorithms like Dijkstra's but this one is just enough for the basic game.</p>
+<p class="greenbox">First, create a list of coordinates, which we will use as a queue. The queue will be initialized with one coordinate, the end coordinate. Each coordinate will also have a counter variable attached (the purpose of this will soon become evident). Thus,
+    the queue starts off as ((3,8,0)). <br />Then, go through every element in the queue, including elements added to the end over the course of the algorithm, and to each element, do the following: <br />1. Create a list of the four adjacent cells, with
+    a counter variable of the current element's counter variable + 1 (in our example, the four cells are ((2,8,1),(3,7,1),(4,8,1),(3,9,1))) <br />2. Check all cells in each list for the following two conditions: <br /> - If the cell is a wall, remove
+    it from the list <br /> - If there is an element in the main list with the same coordinate and an equal or lower counter, remove it from the list <br />3. Add all remaining cells in the list to the end of the main list <br />4. Go to the next item
+    in the list</p>
+<p>&nbsp;</p>
+<p>And below is my implementation:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #9900cc; font-weight: bold;">package</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">  <span style="color: #3f5fbf;">/**</span></span>
+<span style="vertical-align: top;"><span style="color: #3f5fbf;">   * ...</span></span>
+<span style="vertical-align: top;"><span style="color: #3f5fbf;">   * @author wojciech[at]sierakowski.eu</span></span>
+<span style="vertical-align: top;"><span style="color: #3f5fbf;">   * http://en.wikipedia.org/wiki/Pathfinding</span></span>
+<span style="vertical-align: top;"><span style="color: #3f5fbf;">   */</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #0033ff; font-weight: bold;">public</span> <span style="color: #9900cc; font-weight: bold;">class</span> PathFinder</span>
+<span style="vertical-align: top;">  <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">    <span style="color: #009900;">//types of map elements</span></span>
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #6699cc; font-weight: bold;">var</span> MAP_WALL      <span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=string%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:string.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">String</span></a> = <span style="color: #990000;">"X"</span>;</span>
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #6699cc; font-weight: bold;">var</span> MAP_OPEN_SPACE  <span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=string%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:string.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">String</span></a> = <span style="color: #990000;">"_"</span>;</span>
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #6699cc; font-weight: bold;">var</span> MAP_START      <span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=string%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:string.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">String</span></a> = <span style="color: #990000;">"S"</span>;</span>
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #6699cc; font-weight: bold;">var</span> MAP_FINISH    <span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=string%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:string.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">String</span></a> = <span style="color: #990000;">"0"</span>;</span>
+
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #6699cc; font-weight: bold;">var</span> _map<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a>, _queue<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a>;</span>
+
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> <span style="color: #339966; font-weight: bold;">function</span> PathFinder<span style="color: #000000;">(</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000;">{</span></span>
+
+<span style="vertical-align: top;">    <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #339966; font-weight: bold;">function</span> findPath<span style="color: #000000;">(</span><span style="color: #004993;">map</span><span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a></span>
+<span style="vertical-align: top;">    <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> i<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a>, j<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a>;</span>
+<span style="vertical-align: top;">      _queue = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      _map = <span style="color: #004993;">map</span>;</span>
+
+<span style="vertical-align: top;">      <span style="color: #009900;">//first find the coordinate of finish which is a first object</span></span>
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> finishObject<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=object%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:object.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Object</span></a>;</span>
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> counter<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a> = <span style="color: #000000; font-weight: bold;">0</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">for</span> <span style="color: #000000;">(</span>i = <span style="color: #000000; font-weight: bold;">0</span>; i <span style="color: #000000; font-weight: bold;">&lt;</span> _map.<span style="color: #004993;">length</span>; i<span style="color: #000000; font-weight: bold;">++</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">        <span style="color: #0033ff; font-weight: bold;">for</span> <span style="color: #000000;">(</span>j = <span style="color: #000000; font-weight: bold;">0</span>; j <span style="color: #000000; font-weight: bold;">&lt;</span> _map<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.<span style="color: #004993;">length</span>; j<span style="color: #000000; font-weight: bold;">++</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_map<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span><span style="color: #000000;">[</span>j<span style="color: #000000;">]</span> == MAP_FINISH<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">          <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">            finishObject = <span style="color: #000000;">{</span>i<span style="color: #000000; font-weight: bold;">:</span>i, j<span style="color: #000000; font-weight: bold;">:</span>j, counter<span style="color: #000000; font-weight: bold;">:</span><span style="color: #000000; font-weight: bold;">0</span><span style="color: #000000;">}</span>;</span>
+<span style="vertical-align: top;">            <span style="color: #0033ff; font-weight: bold;">break</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      _queue.<span style="color: #004993;">push</span><span style="color: #000000;">(</span>finishObject<span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">      <span style="color: #009900;">//run recursive function to find the shortest path</span></span>
+<span style="vertical-align: top;">      checkQueue<span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">0</span>, <span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">return</span> _queue;</span>
+<span style="vertical-align: top;">    <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">private</span> static <span style="color: #339966; font-weight: bold;">function</span> checkQueue<span style="color: #000000;">(</span>startIndex<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a>, counter<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> lastQueueLength<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a> = _queue.<span style="color: #004993;">length</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> i<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a>;</span>
+
+<span style="vertical-align: top;">      <span style="color: #009900;">//check neigbours of the _queue element</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">for</span> <span style="color: #000000;">(</span>i = startIndex; i <span style="color: #000000; font-weight: bold;">&lt;</span> lastQueueLength; i<span style="color: #000000; font-weight: bold;">++</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">        <span style="color: #6699cc; font-weight: bold;">var</span> coordinate<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=object%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:object.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Object</span></a>;</span>
+<span style="vertical-align: top;">        <span style="color: #009900;">//check top</span></span>
+<span style="vertical-align: top;">        <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j <span style="color: #000000; font-weight: bold;">!</span>= <span style="color: #000000; font-weight: bold;">0</span> <span style="color: #000000; font-weight: bold;">&amp;&amp;</span> _map<span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i<span style="color: #000000;">]</span><span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">]</span> <span style="color: #000000; font-weight: bold;">!</span>= MAP_WALL<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">          coordinate = <span style="color: #000000;">{</span>i<span style="color: #000000; font-weight: bold;">:</span> _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i, j<span style="color: #000000; font-weight: bold;">:</span> _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">1</span>, counter<span style="color: #000000; font-weight: bold;">:</span>counter<span style="color: #000000;">}</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #009900;">//if this coordinate is the start finish algorothm as </span></span>
+<span style="vertical-align: top;">          <span style="color: #009900;">//the shortest path was just found</span></span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_map<span style="color: #000000;">[</span>coordinate.i<span style="color: #000000;">]</span><span style="color: #000000;">[</span>coordinate.j<span style="color: #000000;">]</span> == MAP_START<span style="color: #000000;">)</span> <span style="color: #0033ff; font-weight: bold;">return</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #009900;">//if a coordinate already exists in the queue </span></span>
+<span style="vertical-align: top;">          <span style="color: #009900;">//and has higher coordinate it won't be added</span></span>
+<span style="vertical-align: top;">          <span style="color: #009900;">//but if it has lower coordinate it will replace the one in the queue</span></span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>canBeAddedToQueue<span style="color: #000000;">(</span>coordinate<span style="color: #000000;">)</span><span style="color: #000000;">)</span> _queue.<span style="color: #004993;">push</span><span style="color: #000000;">(</span>coordinate<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">        <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">        <span style="color: #009900;">//check right</span></span>
+<span style="vertical-align: top;">        <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i <span style="color: #000000; font-weight: bold;">!</span>= _map.<span style="color: #004993;">length</span> <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">1</span> <span style="color: #000000; font-weight: bold;">&amp;&amp;</span> </span>
+<span style="vertical-align: top;">                        _map<span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i <span style="color: #000000; font-weight: bold;">+</span> <span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">]</span><span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j<span style="color: #000000;">]</span> <span style="color: #000000; font-weight: bold;">!</span>= MAP_WALL<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">          coordinate = <span style="color: #000000;">{</span>i<span style="color: #000000; font-weight: bold;">:</span> _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i <span style="color: #000000; font-weight: bold;">+</span> <span style="color: #000000; font-weight: bold;">1</span>, j<span style="color: #000000; font-weight: bold;">:</span> _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j, counter<span style="color: #000000; font-weight: bold;">:</span>counter<span style="color: #000000;">}</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_map<span style="color: #000000;">[</span>coordinate.i<span style="color: #000000;">]</span><span style="color: #000000;">[</span>coordinate.j<span style="color: #000000;">]</span> == MAP_START<span style="color: #000000;">)</span> <span style="color: #0033ff; font-weight: bold;">return</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>canBeAddedToQueue<span style="color: #000000;">(</span>coordinate<span style="color: #000000;">)</span><span style="color: #000000;">)</span> _queue.<span style="color: #004993;">push</span><span style="color: #000000;">(</span>coordinate<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">        <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">        <span style="color: #009900;">//check bottom</span></span>
+<span style="vertical-align: top;">        <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j <span style="color: #000000; font-weight: bold;">!</span>= _map<span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i<span style="color: #000000;">]</span>.<span style="color: #004993;">length</span> <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">1</span> <span style="color: #000000; font-weight: bold;">&amp;&amp;</span> </span>
+<span style="vertical-align: top;">                           _map<span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i<span style="color: #000000;">]</span><span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j <span style="color: #000000; font-weight: bold;">+</span> <span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">]</span> <span style="color: #000000; font-weight: bold;">!</span>= MAP_WALL<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">          coordinate = <span style="color: #000000;">{</span>i<span style="color: #000000; font-weight: bold;">:</span> _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i, j<span style="color: #000000; font-weight: bold;">:</span> _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j <span style="color: #000000; font-weight: bold;">+</span> <span style="color: #000000; font-weight: bold;">1</span>, counter<span style="color: #000000; font-weight: bold;">:</span>counter<span style="color: #000000;">}</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_map<span style="color: #000000;">[</span>coordinate.i<span style="color: #000000;">]</span><span style="color: #000000;">[</span>coordinate.j<span style="color: #000000;">]</span> == MAP_START<span style="color: #000000;">)</span> <span style="color: #0033ff; font-weight: bold;">return</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>canBeAddedToQueue<span style="color: #000000;">(</span>coordinate<span style="color: #000000;">)</span><span style="color: #000000;">)</span> _queue.<span style="color: #004993;">push</span><span style="color: #000000;">(</span>coordinate<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">        <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">        <span style="color: #009900;">//check left</span></span>
+<span style="vertical-align: top;">        <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i <span style="color: #000000; font-weight: bold;">!</span>= <span style="color: #000000; font-weight: bold;">0</span> <span style="color: #000000; font-weight: bold;">&amp;&amp;</span> _map<span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">]</span><span style="color: #000000;">[</span>_queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j<span style="color: #000000;">]</span> <span style="color: #000000; font-weight: bold;">!</span>= MAP_WALL<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">          coordinate = <span style="color: #000000;">{</span>i<span style="color: #000000; font-weight: bold;">:</span> _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">1</span>, j<span style="color: #000000; font-weight: bold;">:</span> _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j, counter<span style="color: #000000; font-weight: bold;">:</span>counter<span style="color: #000000;">}</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>_map<span style="color: #000000;">[</span>coordinate.i<span style="color: #000000;">]</span><span style="color: #000000;">[</span>coordinate.j<span style="color: #000000;">]</span> == MAP_START<span style="color: #000000;">)</span> <span style="color: #0033ff; font-weight: bold;">return</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>canBeAddedToQueue<span style="color: #000000;">(</span>coordinate<span style="color: #000000;">)</span><span style="color: #000000;">)</span> _queue.<span style="color: #004993;">push</span><span style="color: #000000;">(</span>coordinate<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">        <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">      checkQueue<span style="color: #000000;">(</span>lastQueueLength, counter <span style="color: #000000; font-weight: bold;">+</span> <span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">    <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #339966; font-weight: bold;">function</span> canBeAddedToQueue<span style="color: #000000;">(</span>coordinate<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=object%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:object.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Object</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=boolean%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:boolean.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Boolean</span></a></span>
+<span style="vertical-align: top;">    <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">for</span> <span style="color: #000000;">(</span><span style="color: #6699cc; font-weight: bold;">var</span> i<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a> = _queue.<span style="color: #004993;">length</span> <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">1</span>; i <span style="color: #000000; font-weight: bold;">&gt;</span>= <span style="color: #000000; font-weight: bold;">0</span> ; i<span style="color: #000000; font-weight: bold;">--</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">        <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>coordinate.i == _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i <span style="color: #000000; font-weight: bold;">&amp;&amp;</span> coordinate.j == _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>coordinate.counter <span style="color: #000000; font-weight: bold;">&gt;</span>= _queue<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.counter<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">          <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">            <span style="color: #0033ff; font-weight: bold;">return</span> <span style="color: #0033ff; font-weight: bold;">false</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">else</span></span>
+<span style="vertical-align: top;">          <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">            _queue.<span style="color: #004993;">splice</span><span style="color: #000000;">(</span>i, <span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">            <span style="color: #0033ff; font-weight: bold;">return</span> <span style="color: #0033ff; font-weight: bold;">true</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">return</span> <span style="color: #0033ff; font-weight: bold;">true</span>;</span>
+<span style="vertical-align: top;">    <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000;">}</span>  </span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">And with this code you can test it. The labirinth is exactly the same as in the Wikipedia example (the result as well):</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #9900cc; font-weight: bold;">package</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">  <span style="color: #3f5fbf;">/**</span></span>
+<span style="vertical-align: top;"><span style="color: #3f5fbf;">   * ...</span></span>
+<span style="vertical-align: top;"><span style="color: #3f5fbf;">   * @author wojciech[at]sierakowski.eu</span></span>
+<span style="vertical-align: top;"><span style="color: #3f5fbf;">   */</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.display</span>.<a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a>;</span>
+<span style="vertical-align: top;">  <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.text</span>.<a href="http://www.google.com/search?q=textfield%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:textfield.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">TextField</span></a>;</span>
+
+<span style="vertical-align: top;">  <span style="color: #0033ff; font-weight: bold;">public</span> <span style="color: #9900cc; font-weight: bold;">class</span> Pathfinding extends <a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a></span>
+<span style="vertical-align: top;">  <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">    <span style="color: #6699cc; font-weight: bold;">var</span> <span style="color: #004993;">map</span><span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a>;</span>
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> static <span style="color: #6699cc; font-weight: bold;">var</span> MAP_ELEMENT_SIZE  <span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a> = <span style="color: #000000; font-weight: bold;">20</span>;</span>
+
+<span style="vertical-align: top;">    <span style="color: #6699cc; font-weight: bold;">var</span> mapSpriteBefore<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a>, mapSpriteAfter<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a>;</span>
+
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> <span style="color: #339966; font-weight: bold;">function</span> Pathfinding<span style="color: #000000;">(</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      <span style="color: #009900;">//create a map</span></span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">0</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X X X X X X X X X X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X _ _ _ X X _ X _ X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">2</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X _ X _ _ X _ _ _ X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">3</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X S X X _ _ _ X _ X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">4</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X _ X _ _ X _ _ _ X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">5</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X _ _ _ X X _ X _ X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">6</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X _ X _ _ X _ X _ X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">7</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X _ X X _ _ _ X _ X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">8</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X _ _ 0 _ X _ _ _ X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">map</span><span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">9</span><span style="color: #000000;">]</span> = <span style="color: #990000;">"X X X X X X X X X X"</span>.<span style="color: #004993;">split</span><span style="color: #000000;">(</span><span style="color: #990000;">" "</span><span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">      mapSpriteBefore = createVisualMap<span style="color: #000000;">(</span><span style="color: #004993;">map</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>mapSpriteBefore<span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> paths<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a> = PathFinder.findPath<span style="color: #000000;">(</span><span style="color: #004993;">map</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      mapSpriteAfter = createVisualMap<span style="color: #000000;">(</span><span style="color: #004993;">map</span>, paths<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      mapSpriteAfter.<span style="color: #004993;">x</span> = MAP_ELEMENT_SIZE <span style="color: #000000; font-weight: bold;">*</span> <span style="color: #000000; font-weight: bold;">11</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>mapSpriteAfter<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">    <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">    <span style="color: #0033ff; font-weight: bold;">public</span> <span style="color: #339966; font-weight: bold;">function</span> createVisualMap<span style="color: #000000;">(</span>mapArray<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a>, paths<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=array%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:array.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Array</span></a> = <span style="color: #0033ff; font-weight: bold;">null</span><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a></span>
+<span style="vertical-align: top;">    <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> i<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a>;</span>
+
+<span style="vertical-align: top;">      <span style="color: #6699cc; font-weight: bold;">var</span> mapSprite<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">for</span> <span style="color: #000000;">(</span>i = <span style="color: #000000; font-weight: bold;">0</span>; i <span style="color: #000000; font-weight: bold;">&lt;</span> mapArray.<span style="color: #004993;">length</span>; i<span style="color: #000000; font-weight: bold;">++</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">        <span style="color: #0033ff; font-weight: bold;">for</span> <span style="color: #000000;">(</span><span style="color: #6699cc; font-weight: bold;">var</span> j<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=int%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:int.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">int</span></a> = <span style="color: #000000; font-weight: bold;">0</span>; j <span style="color: #000000; font-weight: bold;">&lt;</span> mapArray<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.<span style="color: #004993;">length</span>; j<span style="color: #000000; font-weight: bold;">++</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">          <span style="color: #6699cc; font-weight: bold;">var</span> mapElement<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #0033ff; font-weight: bold;">switch</span> <span style="color: #000000;">(</span>mapArray<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span><span style="color: #000000;">[</span>j<span style="color: #000000;">]</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">          <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">            <span style="color: #0033ff; font-weight: bold;">case</span> PathFinder.MAP_WALL<span style="color: #000000; font-weight: bold;">:</span></span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">beginFill</span><span style="color: #000000;">(</span>0x000000<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">drawRect</span><span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">0</span>, <span style="color: #000000; font-weight: bold;">0</span>, MAP_ELEMENT_SIZE, MAP_ELEMENT_SIZE<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">endFill</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              <span style="color: #0033ff; font-weight: bold;">break</span>;</span>
+<span style="vertical-align: top;">            <span style="color: #0033ff; font-weight: bold;">case</span> PathFinder.MAP_OPEN_SPACE<span style="color: #000000; font-weight: bold;">:</span></span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">beginFill</span><span style="color: #000000;">(</span>0xFFFFFF<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">drawRect</span><span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">0</span>, <span style="color: #000000; font-weight: bold;">0</span>, MAP_ELEMENT_SIZE, MAP_ELEMENT_SIZE<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">endFill</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              <span style="color: #0033ff; font-weight: bold;">break</span>;</span>
+<span style="vertical-align: top;">            <span style="color: #0033ff; font-weight: bold;">case</span> PathFinder.MAP_START<span style="color: #000000; font-weight: bold;">:</span></span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">beginFill</span><span style="color: #000000;">(</span>0x00FFFF<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">drawRect</span><span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">0</span>, <span style="color: #000000; font-weight: bold;">0</span>, MAP_ELEMENT_SIZE, MAP_ELEMENT_SIZE<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">endFill</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              <span style="color: #0033ff; font-weight: bold;">break</span>;</span>
+<span style="vertical-align: top;">            <span style="color: #0033ff; font-weight: bold;">case</span> PathFinder.MAP_FINISH<span style="color: #000000; font-weight: bold;">:</span></span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">beginFill</span><span style="color: #000000;">(</span>0xFF0000, .5<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">drawRect</span><span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">0</span>, <span style="color: #000000; font-weight: bold;">0</span>, MAP_ELEMENT_SIZE, MAP_ELEMENT_SIZE<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              mapElement.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">endFill</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">              <span style="color: #0033ff; font-weight: bold;">break</span>;</span>
+<span style="vertical-align: top;">          <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">          mapElement.<span style="color: #004993;">x</span> = j <span style="color: #000000; font-weight: bold;">*</span> MAP_ELEMENT_SIZE;</span>
+<span style="vertical-align: top;">          mapElement.<span style="color: #004993;">y</span> = i <span style="color: #000000; font-weight: bold;">*</span> MAP_ELEMENT_SIZE;</span>
+<span style="vertical-align: top;">          mapSprite.<span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>mapElement<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">        <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>paths <span style="color: #000000; font-weight: bold;">!</span>= <span style="color: #0033ff; font-weight: bold;">null</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">        <span style="color: #0033ff; font-weight: bold;">for</span> <span style="color: #000000;">(</span>i = <span style="color: #000000; font-weight: bold;">0</span>; i <span style="color: #000000; font-weight: bold;">&lt;</span> paths.<span style="color: #004993;">length</span>; i<span style="color: #000000; font-weight: bold;">++</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">          <span style="color: #6699cc; font-weight: bold;">var</span> label_txt<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=textfield%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:textfield.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">TextField</span></a> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=textfield%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:textfield.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">TextField</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">          label_txt.<span style="color: #004993;">text</span> = paths<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.counter;</span>
+<span style="vertical-align: top;">          label_txt.<span style="color: #004993;">x</span> = paths<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.j <span style="color: #000000; font-weight: bold;">*</span> MAP_ELEMENT_SIZE;</span>
+<span style="vertical-align: top;">          label_txt.<span style="color: #004993;">y</span> = paths<span style="color: #000000;">[</span>i<span style="color: #000000;">]</span>.i <span style="color: #000000; font-weight: bold;">*</span> MAP_ELEMENT_SIZE;</span>
+<span style="vertical-align: top;">          mapSprite.<span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>label_txt<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">        <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">return</span> mapSprite;</span>
+<span style="vertical-align: top;">    <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">And now quoting the Wikipedia's article: "Now, start at Start and go to the nearby cell with the lowest number (unchecked cells cannot be moved to).".</p>
+<p><object data="http://sierakowski.eu/examples/pathfinding/pathfinding.swf" type="application/x-shockwave-flash" width="382" height="175"><param name="src" value="http://sierakowski.eu/examples/pathfinding/pathfinding.swf" /><param name="wmode" value="transparent" />
+</object></p>
+<p>&nbsp;</p>
+<p style="text-align: justify;"><span style="line-height: 21px;">No doubt there might be some more optimal way of doing this, but this one does the job alright ;) If you have any suggestion or came up with other (and better) algorithms in ActionScript and would like to share it with the community, add a comment with a link to your blog article.</span></p>
+<p><span style="line-height: 21px;">&nbsp;</span></p>
+<p></p>
+<div id="jc">
+    <div id="comments">
+        <h4>Comments imported from the original article @sierakowski.eu</h4>
+        <div id="comments-list" class="comments-list">
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#5</a> <span class="comment-author">Hari</span> <span class="comment-date">2014-05-10 06:52</span>
+                            <div id="comment-body-200" class="comment-body"><img src="http://sierakowski.eu/legacy/jcomments/smiles/normal.gif" alt=":-|" border="0" /> i have no errors but nothing is displayed on my screen. can you please help me how will i can compile this .as files. Am very new to
+                                AS3. Thanks in Advance!!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#4</a> <span class="comment-author">ehaugw</span> <span class="comment-date">2013-07-11 22:07</span>
+                            <div id="comment-body-194" class="comment-body">Isn't this what's called the A* algorithm?</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#3</a> <span class="comment-author">David J.</span> <span class="comment-date">2013-05-17 18:10</span>
+                            <div id="comment-body-194" class="comment-body">I'm glad I finally found a pathfinding algorithm that doesn't take hours to understand. Thanks a ton for sharing this!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#2</a> <span class="comment-author">Alex</span> <span class="comment-date">2012-07-21 22:42</span>
+                            <div id="comment-body-137" class="comment-body">I know this article is almost a year old, but I love it! It's thought through correctly and is overall a fascinating approach <img src="http://sierakowski.eu/legacy/jcomments/smiles/lol.gif" alt=":lol:" border="0" /></div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+1</span> </span>
+                            </span> <a class="comment-anchor">#1</a> <span class="comment-author">Aubrius</span> <span class="comment-date">2011-12-14 22:55</span>
+                            <div id="comment-body-190" class="comment-body">I have used other people's algorithms and functions for path-finding before, but I never understood the purpose of the queue until I read this post. Thanks for sharing it!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

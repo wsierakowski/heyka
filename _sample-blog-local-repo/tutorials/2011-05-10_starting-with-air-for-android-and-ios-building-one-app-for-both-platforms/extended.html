@@ -1,0 +1,881 @@
+<div class="recycle">Article imported from <em>http://sierakowski.eu/list-of-tips/82-starting-with-air-for-android-and-ios-building-one-app-for-both-platforms.html</em></div>
+<p style="text-align: justify;">By the way, if you are curious why only now Adobe have allowed developers to use the same features for iOS as for Android and what's new in AIR 2.6, follow these links:<span style="line-height: 26px;"><a href="http://www.adobe.com/devnet/air/articles/ios_features_in_air26.html" target="_blank">http://www.adobe.com/devnet/air/articles/ios_features_in_air26.html</a> and</span>    <a href="http://www.adobe.com/devnet/air/articles/whats-new-in-air-26.html" target="_blank">http://www.adobe.com/devnet/air/articles/whats-new-in-air-26.html</a></p>
+<h3><br />Before we start</h3>
+<p style="text-align: justify;">First I want to also explain why I'm going to use command line tool that comes with AIR called ADT (AIR Developer Tool) to publish apps rather than UI which is available in the Flash Professional CS5 IDE. When installing "fresh" Flash CS5, there is only
+    option to create AIR apps (for desktops) or iPhone apps through PFI. But later Adobe provided the "AIR for Android" extension that could be downloaded here <a href="http://labs.adobe.com/technologies/flashpro_extensionforair/">http://labs.adobe.com/technologies/flashpro_extensionforair/</a>    that added the UI to set up projects parameters necessary to publish and to use some of the features in your apps. This window is very similar to "iPhone OS Settings" which is built in already to Flash. [<em>UPDATE: AIR for Android Beta extension is no longer available on Adobe Labs website, but you can still find it when googling for "flashpro_extensionforair_p2_112210.zxp" file. This is because Adobe has included it in the Flash Professional CS5.5 which is a paid update if you already have CS5 </em><em><img title="Frown" src="http://sierakowski.eu/legacy/tiny_mce/emotions/smiley-frown.gif" alt="Frown" border="0" /></em>    ]. Below is the screenshot of the AIR for Android Settings window that appears if the extension is installed.</p>
+<p><img src="http://sierakowski.eu/examples/AIR_Android_iOS/AIRforAndroidSettings.jpg" alt="AIR for Android settings" /></p>
+<p style="text-align: justify;">Alhought it is really handy to use it because you don't have to use any command line, just few clicks and application is running on your device, but the problem is that when using it you are publishing with AIR 2.5 and you can't publish with AIR 2.6.
+    [<em>UPDATE: to publish with AIR 2.6 from Flash Professional you need to get the CS5.5 upgrade.</em>]. Adobe usually first releases the new version of ADT (new version of AIR) and then after weeks or months an update to Flash IDE to add it to GUI.</p>
+<p style="text-align: justify;">Also there are plenty of options missing there that you could do when manually modifying your application descriptor file or ADT commands, just as quick examples it could be an option to move your app to SD card on Android, publishing with different download
+    URI if you want to publish your Android app on Amazon AppStore, enabling iPhone users to actually close your app rather than pause when pushing the home button and more...</p>
+<p style="text-align: justify;">Very important thing to bear in mind is that an app published with AIR 2.6 won't work on every device!</p>
+<p class="redbox"><strong>Apps published with AIR 2.6 work on:</strong><br />- Android OS in version 2.2 or later, <br />- IOS 4 or later (including iPod Touch 3rd gen and later, iPhone 3gs and later, iPad1 and 2). <br />If you want your app to be working on older versions
+    of iPhone or iPod, you need to use the old Packager for iPhone tool.</p>
+<h3><br />Creating AIR project that works on both platforms</h3>
+<p style="text-align: justify;">We are going to create a simple app that will check device resolution, create a rectangle that will fill the screen fully horizontally and 60% vertically, display a text field showing which device type app is running on and detected resolution and create
+    a ball that will be controlled by accelerometer. This app is not intended to do any useful things but it is good as an example :)</p>
+<p class="globe">TestApp source files: <a href="http://sierakowski.eu/examples/AIR_Android_iOS/testApp.zip" target="_blank">http://sierakowski.eu/examples/AIR_Android_iOS/testApp.zip</a></p>
+<p style="text-align: justify;">In order to create app for mobile devices, you need to create a new AIR project (or if you have AIR for Android you can use it - it doesn't really matter as we won't use AIR settings in Flash). Choose "New Document", select "Adobe AIR 2" and save it as
+    the testApp.fla. I'm going to save it to my d:\\projects\\testapp folder. Within a testapp folder I also created publishing folder where the swf will be published. To set your publishing folder for swf files, go to File -&gt; "Publish Settings" and
+    in Formats tab type "./publishing/testApp.swf" in the File text box for Flash (.swf) field. Next you need to specify project dimensions, I will set 400x400 pixels, it doesn't actually matter as we will adjust it dynamically anyway. The last thing
+    is to create a Document Class called TestApp. At this stage your properties panel should look like on the screenshot below.</p>
+<p><img src="http://sierakowski.eu/examples/AIR_Android_iOS/testAppProperties.jpg" alt="Project properties for testApp" /></p>
+<p style="text-align: justify;">Now add the code below to your Document Class - TestApp.as file:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #9900cc; font-weight: bold;">package</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.display</span>.<a href="http://www.google.com/search?q=stagealign%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:stagealign.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">StageAlign</span></a>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.display</span>.<a href="http://www.google.com/search?q=stagescalemode%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:stagescalemode.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">StageScaleMode</span></a>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.display</span>.<a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.text</span>.<a href="http://www.google.com/search?q=textfield%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:textfield.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">TextField</span></a>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.events</span>.<a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>;   </span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.system</span>.<a href="http://www.google.com/search?q=capabilities%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:capabilities.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Capabilities</span></a>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> flash.sensors.Accelerometer;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.events</span>.AccelerometerEvent;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> <span style="color: #004993;">flash.events</span>.<a href="http://www.google.com/search?q=mouseevent%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:mouseevent.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">MouseEvent</span></a>;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> flash.desktop.NativeApplication;</span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">import</span> flash.desktop.SystemIdleMode;</span>
+
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">public</span> <span style="color: #9900cc; font-weight: bold;">class</span> TestApp extends <a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #6699cc; font-weight: bold;">var</span> bcg<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a>;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #6699cc; font-weight: bold;">var</span> ball<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a>;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #6699cc; font-weight: bold;">var</span> info_txt<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=textfield%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:textfield.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">TextField</span></a>;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #6699cc; font-weight: bold;">var</span> <span style="color: #004993;">info</span><span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=string%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:string.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">String</span></a>;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #6699cc; font-weight: bold;">var</span> <span style="color: #004993;">stageWidth</span>, <span style="color: #004993;">stageHeight</span>, heightOffset, accX, accY<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=number%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:number.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Number</span></a>;</span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #6699cc; font-weight: bold;">var</span> acc<span style="color: #000000; font-weight: bold;">:</span>Accelerometer;</span>
+
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">public</span> <span style="color: #339966; font-weight: bold;">function</span> TestApp<span style="color: #000000;">(</span><span style="color: #000000;">)</span> </span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">         <span style="color: #009900;">//before we can work with stage object, we need to make sure</span></span>
+<span style="vertical-align: top;">         <span style="color: #009900;">//that it has been added to the display list</span></span>
+<span style="vertical-align: top;">         <span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">ADDED</span>, <span style="color: #004993;">init</span><span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//prevent screen dimming</span></span>
+<span style="vertical-align: top;">         <span style="color: #009900;">//Persmissions xml file has to have android.permission.WAKE_LOCK </span></span>
+<span style="vertical-align: top;">         <span style="color: #009900;">//android.permission.DISABLE_KEYGUARD enabled!</span></span>
+<span style="vertical-align: top;">         NativeApplication.nativeApplication.systemIdleMode = </span>
+<span style="vertical-align: top;">                                               SystemIdleMode.KEEP_AWAKE;</span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #339966; font-weight: bold;">function</span> <span style="color: #004993;">init</span><span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">         <span style="color: #004993;">removeEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">ADDED</span>, <span style="color: #004993;">init</span><span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//stage has no scale, we will lay it out properly</span></span>
+<span style="vertical-align: top;">         <span style="color: #004993;">stage</span>.<span style="color: #004993;">scaleMode</span> = <a href="http://www.google.com/search?q=stagescalemode%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:stagescalemode.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">StageScaleMode</span></a>.<span style="color: #004993;">NO_SCALE</span>;</span>
+<span style="vertical-align: top;">         <span style="color: #004993;">stage</span>.<span style="color: #004993;">align</span> = <a href="http://www.google.com/search?q=stagealign%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:stagealign.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">StageAlign</span></a>.<span style="color: #004993;">TOP_LEFT</span>;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//as soon as the stage is resized (or app initialised) </span></span>
+<span style="vertical-align: top;">         <span style="color: #009900;">//we will create our graphics objects</span></span>
+<span style="vertical-align: top;">         <span style="color: #004993;">stage</span>.<span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">RESIZE</span>, <span style="color: #004993;">resize</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #339966; font-weight: bold;">function</span> <span style="color: #004993;">resize</span><span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">         <span style="color: #009900;">//we don't need to lister for resize event anymore </span></span>
+<span style="vertical-align: top;">         <span style="color: #009900;">//as the stage orientation is fixed and will not change</span></span>
+<span style="vertical-align: top;">         <span style="color: #004993;">stage</span>.<span style="color: #004993;">removeEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">RESIZE</span>, <span style="color: #004993;">resize</span><span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//get the fullscreen size of the stage. </span></span>
+<span style="vertical-align: top;">         <span style="color: #009900;">//It will cover the status bar of Android and iOS</span></span>
+<span style="vertical-align: top;">   <span style="color: #009900;">//On iOS it returns width smaller than height on landscape mode(a bug?)</span></span>
+<span style="vertical-align: top;">   <span style="color: #009900;">//so we need to find a larger value and make it width</span></span>
+<span style="vertical-align: top;">         <span style="color: #004993;">stageWidth</span> = <a href="http://www.google.com/search?q=math%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:math.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Math</span></a>.<span style="color: #004993;">max</span><span style="color: #000000;">(</span><span style="color: #004993;">stage</span>.fullScreenWidth, <span style="color: #004993;">stage</span>.fullScreenHeight<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         <span style="color: #004993;">stageHeight</span> = <a href="http://www.google.com/search?q=math%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:math.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Math</span></a>.<span style="color: #004993;">min</span><span style="color: #000000;">(</span><span style="color: #004993;">stage</span>.fullScreenWidth, <span style="color: #004993;">stage</span>.fullScreenHeight<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         heightOffset = <span style="color: #004993;">stageHeight</span> <span style="color: #000000; font-weight: bold;">*</span> .2;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//creating bcg image with full stage width and height 60% of stage height</span></span>
+<span style="vertical-align: top;">         bcg = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         bcg.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">beginFill</span><span style="color: #000000;">(</span>0xcdd6df<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         bcg.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">drawRoundRect</span><span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">0</span>, heightOffset, </span>
+<span style="vertical-align: top;">                             <span style="color: #004993;">stageWidth</span>, <span style="color: #004993;">stageHeight</span> <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">2</span> <span style="color: #000000; font-weight: bold;">*</span> heightOffset, <span style="color: #000000; font-weight: bold;">50</span>, <span style="color: #000000; font-weight: bold;">50</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         bcg.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">endFill</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//creating ball image</span></span>
+<span style="vertical-align: top;">         ball = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=sprite%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:sprite.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Sprite</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         ball.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">beginFill</span><span style="color: #000000;">(</span>0xFF0000<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         ball.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">drawCircle</span><span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">0</span>, <span style="color: #000000; font-weight: bold;">0</span>, heightOffset <span style="color: #000000; font-weight: bold;">*</span> .5<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         ball.<span style="color: #004993;">graphics</span>.<span style="color: #004993;">endFill</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         ball.<span style="color: #004993;">cacheAsBitmap</span> = <span style="color: #0033ff; font-weight: bold;">true</span>;</span>
+<span style="vertical-align: top;">         ball.<span style="color: #004993;">x</span> = <span style="color: #004993;">stageWidth</span> <span style="color: #000000; font-weight: bold;">*</span> .5;</span>
+<span style="vertical-align: top;">         ball.<span style="color: #004993;">y</span> = <span style="color: #004993;">stageHeight</span> <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">2</span> <span style="color: #000000; font-weight: bold;">*</span> heightOffset;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//creating text field with some system info</span></span>
+<span style="vertical-align: top;">         <span style="color: #004993;">info</span> = <span style="color: #990000;">"Detected resolution: "</span> <span style="color: #000000; font-weight: bold;">+</span> <span style="color: #004993;">stageWidth</span> <span style="color: #000000; font-weight: bold;">+</span> <span style="color: #990000;">"x"</span> <span style="color: #000000; font-weight: bold;">+</span> <span style="color: #004993;">stageHeight</span>;</span>
+<span style="vertical-align: top;">         <span style="color: #004993;">info</span> <span style="color: #000000; font-weight: bold;">+</span>= <span style="color: #990000;">"\\nDevice type: "</span> <span style="color: #000000; font-weight: bold;">+</span> <a href="http://www.google.com/search?q=capabilities%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:capabilities.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Capabilities</span></a>.<span style="color: #004993;">manufacturer</span>;</span>
+<span style="vertical-align: top;">         info_txt = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=textfield%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:textfield.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">TextField</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         info_txt.<span style="color: #004993;">width</span> = <span style="color: #000000; font-weight: bold;">200</span>;</span>
+<span style="vertical-align: top;">         info_txt.<span style="color: #004993;">text</span> = <span style="color: #004993;">info</span>;</span>
+<span style="vertical-align: top;">         info_txt.<span style="color: #004993;">x</span> = <span style="color: #004993;">stageWidth</span> <span style="color: #000000; font-weight: bold;">*</span> .5 <span style="color: #000000; font-weight: bold;">-</span> info_txt.<span style="color: #004993;">width</span> <span style="color: #000000; font-weight: bold;">*</span> .5;</span>
+<span style="vertical-align: top;">         info_txt.<span style="color: #004993;">y</span> = <span style="color: #004993;">stageHeight</span> <span style="color: #000000; font-weight: bold;">*</span> .5 <span style="color: #000000; font-weight: bold;">-</span> info_txt.<span style="color: #004993;">height</span> <span style="color: #000000; font-weight: bold;">*</span> .5;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//converting vectors to bitmap and adding everything on stage</span></span>
+<span style="vertical-align: top;">         bcg.<span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>info_txt<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         bcg.<span style="color: #004993;">cacheAsBitmap</span> = <span style="color: #0033ff; font-weight: bold;">true</span>;</span>
+<span style="vertical-align: top;">         <span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>bcg<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         <span style="color: #004993;">addChild</span><span style="color: #000000;">(</span>ball<span style="color: #000000;">)</span>;</span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//if accelerometer is available then activate it to control the ball</span></span>
+<span style="vertical-align: top;">         <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>Accelerometer.isSupported<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">         <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">            acc = <span style="color: #0033ff; font-weight: bold;">new</span> Accelerometer<span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">            acc.<span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span>AccelerometerEvent.UPDATE, accUpdate<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">            <span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a>.<span style="color: #004993;">ENTER_FRAME</span>, updateBall<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">         <span style="color: #009900;">//if running on everything else than iOS activae exit by touching the ball</span></span>
+<span style="vertical-align: top;">         <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span><a href="http://www.google.com/search?q=capabilities%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:capabilities.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Capabilities</span></a>.<span style="color: #004993;">manufacturer</span>.<span style="color: #004993;">indexOf</span><span style="color: #000000;">(</span><span style="color: #990000;">"iOS"</span><span style="color: #000000;">)</span> == <span style="color: #000000; font-weight: bold;">-</span><span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">         <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">            ball.<span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span><a href="http://www.google.com/search?q=mouseevent%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:mouseevent.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">MouseEvent</span></a>.<span style="color: #004993;">MOUSE_DOWN</span>, </span>
+<span style="vertical-align: top;">                      <span style="color: #339966; font-weight: bold;">function</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span><span style="color: #000000;">{</span>NativeApplication.nativeApplication.exit<span style="color: #000000;">(</span><span style="color: #000000;">)</span>;<span style="color: #000000;">}</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">         <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">      <span style="color: #009900;">//handler for accelerometer</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #339966; font-weight: bold;">function</span> accUpdate<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span>AccelerometerEvent<span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">         accX = e.accelerationX;</span>
+<span style="vertical-align: top;">         accY = e.accelerationY;</span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+
+<span style="vertical-align: top;">      <span style="color: #009900;">//handler to move the ball</span></span>
+<span style="vertical-align: top;">      <span style="color: #0033ff; font-weight: bold;">private</span> <span style="color: #339966; font-weight: bold;">function</span> updateBall<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=event%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:event.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Event</span></a><span style="color: #000000;">)</span><span style="color: #000000; font-weight: bold;">:</span><span style="color: #0033ff; font-weight: bold;">void</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">         ball.<span style="color: #004993;">x</span> <span style="color: #000000; font-weight: bold;">-</span>= accX <span style="color: #000000; font-weight: bold;">*</span> <span style="color: #000000; font-weight: bold;">30</span>;</span>
+<span style="vertical-align: top;">         ball.<span style="color: #004993;">y</span> <span style="color: #000000; font-weight: bold;">+</span>= accY <span style="color: #000000; font-weight: bold;">*</span> <span style="color: #000000; font-weight: bold;">30</span>;</span>
+
+<span style="vertical-align: top;">         <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>ball.<span style="color: #004993;">x</span> <span style="color: #000000; font-weight: bold;">&gt;</span> <span style="color: #004993;">stageWidth</span> <span style="color: #000000; font-weight: bold;">-</span> ball.<span style="color: #004993;">width</span> <span style="color: #000000; font-weight: bold;">*</span> .5<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">            ball.<span style="color: #004993;">x</span> = <span style="color: #004993;">stageWidth</span> <span style="color: #000000; font-weight: bold;">-</span> ball.<span style="color: #004993;">width</span> <span style="color: #000000; font-weight: bold;">*</span> .5;</span>
+
+<span style="vertical-align: top;">         <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>ball.<span style="color: #004993;">x</span> <span style="color: #000000; font-weight: bold;">&lt;</span> ball.<span style="color: #004993;">width</span> <span style="color: #000000; font-weight: bold;">*</span> .5<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">            ball.<span style="color: #004993;">x</span> = ball.<span style="color: #004993;">width</span> <span style="color: #000000; font-weight: bold;">*</span> .5;</span>
+
+<span style="vertical-align: top;">         <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>ball.<span style="color: #004993;">y</span> <span style="color: #000000; font-weight: bold;">&gt;</span>  <span style="color: #004993;">stageHeight</span> <span style="color: #000000; font-weight: bold;">-</span> ball.<span style="color: #004993;">height</span> <span style="color: #000000; font-weight: bold;">*</span> .5<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">            ball.<span style="color: #004993;">y</span> = <span style="color: #004993;">stageHeight</span> <span style="color: #000000; font-weight: bold;">-</span> ball.<span style="color: #004993;">height</span> <span style="color: #000000; font-weight: bold;">*</span> .5;</span>
+
+<span style="vertical-align: top;">         <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>ball.<span style="color: #004993;">y</span> <span style="color: #000000; font-weight: bold;">&lt;</span> ball.<span style="color: #004993;">height</span> <span style="color: #000000; font-weight: bold;">*</span> .5<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">            ball.<span style="color: #004993;">y</span> = ball.<span style="color: #004993;">height</span> <span style="color: #000000; font-weight: bold;">*</span> .5;</span>
+<span style="vertical-align: top;">      <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">The code above targets both Android and iOS platforms and it disables functionalities that aren't available at runtime. In example, unlike on Android, it is not possible to quit application on iPhone from the application code, the users can do that by
+    pressing the hardware Home button. So our app's code checks what the hardware platform is and if it is not iOS then it adds exit functionality (by touching the ball). If you wanted to use Android Menu or Back keys you would also need to do that in
+    the Android part of your code. Another thing is that we don't want a device to dim the screen when our application is running. To do that we use NativeApplication.systemIdleMode. But in order to use this feature, we need to add (or rather request
+    for) relevant permissions to the Android app descriptor file and we will do that in another step of this tutorial. Application also uses an accelerometer, but before initialising it, we check if its actually available on a device.</p>
+<p style="text-align: justify;">To improve performance we are going to use GPU mode and we don't use any vectors but convert them to bitmaps. If we used vectors, which are actually mathematical calculations, the CPU would need to recalculate them every time we move them or if there
+    was any object that overlapped them and moved. If we use bitmaps, this job is done by the GPU and the CPU can concentrate on executing the code and application logic rather than rendering the graphics. So just after creating our sprites, we set cacheAsBitmap
+    property to true which caches these vector sprites as bitmaps. If we also wanted to scale or rotate our objects, we would need to additionally use another property cacheAsBitmapMatrix, otherwise bitmap would need to be recalculated and cached again
+    what would decrease the performance.</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #004993;">matrix</span><span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=matrix%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:matrix.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Matrix</span></a> = <span style="color: #0033ff; font-weight: bold;">new</span> <a href="http://www.google.com/search?q=matrix%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:matrix.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Matrix</span></a><span style="color: #000000;">(</span><span style="color: #000000;">)</span>; <span style="color: #009900;">// creates an identity matrix </span></span>
+<span style="vertical-align: top;">mySprite.cacheAsBitmapMatrix = <span style="color: #004993;">matrix</span>; </span>
+<span style="vertical-align: top;">mySprite.<span style="color: #004993;">cacheAsBitmap</span> = <span style="color: #0033ff; font-weight: bold;">true</span>;</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Also bear in mind that this method works only on Sprites or MovieClips that don't have any animations. If a MovieClip has frames to play, bitmap will need to be updated for every frame what again kills the performance. In my other projects I actually
+    convert all vectors and movieclips to bitmaps using BitmapData.draw method frame by frame but this is a subject for another article about optimisation that I'm currently working on :) Important thing to note is that when using the GPU mode, any filters
+    or blendmodes will not be displayed.</p>
+<p>To learn more about ActionScript APIs specific for mobile development visit: <span style="line-height: 26px;"><a href="http://help.adobe.com/en_US/as3/iphone/WS789ea67d3e73a8b24b55b57a124b32b5b57-7ffe.html" target="_blank">http://help.adobe.com/en_US/as3/iphone/WS789ea67d3e73a8b24b55b57a124b32b5b57-7ffe.html</a>.</span></p>
+<p style="text-align: justify;">Now if you test this project on your computer you will notice that stage size is as you set 400x400 pixels but assets are too big and you can only see a small percent of the actual size. This is because they are dynamically resized to match a full size
+    of a device screen. When you deploy it on your device, it will look correctly. You can use stageWidth and stageHeight when testing on your computer or just make the window fullscreen.</p>
+<p style="text-align: justify;">So now once you have your application ready as the swf file has been produced to the d:\\project\\testApp\\publishing folder, the next step is to create application descriptor files, one for Android and one for iOS. They are required by AIR ADT to create
+    and package your apps.</p>
+<h3><br />Creating application descriptor files and graphics files for Android and iOS</h3>
+<p style="text-align: justify;">You wouldn't have to manually create descriptor files if you used GUI available in Flash Professional but creating it once this way and reusing it later enables you to better understand your application and you can also add some features that are not
+    available from the Flash GUI. The "application descriptor" file is a container with settings and information necessary to publish your application the way that will make it compatible with the device's operating system. The convention is that the
+    descriptor file name is constructed by adding "-app" prefix to your app name (ie. yourAppName-app.xml). So in our case it would be TestApp-app.xml.</p>
+<p style="text-align: justify;">If you look at the descriptor file for Android and iOS you may realize that we could actually create the same descriptor for both platforms. The difference really is that iOS version requires different icon sizes than Android, besides they have different
+    sections that are platform specific but having them both in the same file won't break anything, the ADT will skip the parts that are not relevant for a chosen platform.</p>
+<p>Below is the content of the file, which we name testAppAndroid-app.xml:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;?</span>xml <span style="color: #004993;">version</span>=<span style="color: #990000;">"1.0"</span> encoding=<span style="color: #990000;">"UTF-8"</span> standalone=<span style="color: #990000;">"no"</span> <span style="color: #000000; font-weight: bold;">?&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>application xmlns=<span style="color: #990000;">"http://ns.adobe.com/air/application/2.6"</span><span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>id<span style="color: #000000; font-weight: bold;">&gt;</span>eu.sierakowski.TestApp<span style="color: #000000; font-weight: bold;">&lt;/</span>id<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>versionNumber<span style="color: #000000; font-weight: bold;">&gt;</span>1.0.0<span style="color: #000000; font-weight: bold;">&lt;/</span>versionNumber<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>versionLabel<span style="color: #000000; font-weight: bold;">&gt;</span>1.0.0<span style="color: #000000; font-weight: bold;">&lt;/</span>versionLabel<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>filename<span style="color: #000000; font-weight: bold;">&gt;</span>testApp<span style="color: #000000; font-weight: bold;">&lt;/</span>filename<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>description<span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>name<span style="color: #000000; font-weight: bold;">&gt;</span>Test Application<span style="color: #000000; font-weight: bold;">&lt;/</span>name<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>copyright<span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>initialWindow<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>content<span style="color: #000000; font-weight: bold;">&gt;</span>testApp.swf<span style="color: #000000; font-weight: bold;">&lt;/</span>content<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>systemChrome<span style="color: #000000; font-weight: bold;">&gt;</span>standard<span style="color: #000000; font-weight: bold;">&lt;/</span>systemChrome<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>transparent<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>transparent<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>visible<span style="color: #000000; font-weight: bold;">&gt;</span>true<span style="color: #000000; font-weight: bold;">&lt;/</span>visible<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>fullScreen<span style="color: #000000; font-weight: bold;">&gt;</span>true<span style="color: #000000; font-weight: bold;">&lt;/</span>fullScreen<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>aspectRatio<span style="color: #000000; font-weight: bold;">&gt;</span>landscape<span style="color: #000000; font-weight: bold;">&lt;/</span>aspectRatio<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>renderMode<span style="color: #000000; font-weight: bold;">&gt;</span>gpu<span style="color: #000000; font-weight: bold;">&lt;/</span>renderMode<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>autoOrients<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>autoOrients<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;/</span>initialWindow<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>icon<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>image36x36<span style="color: #000000; font-weight: bold;">&gt;</span>testAppIcon36.png<span style="color: #000000; font-weight: bold;">&lt;/</span>image36x36<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>image48x48<span style="color: #000000; font-weight: bold;">&gt;</span>testAppIcon48.png<span style="color: #000000; font-weight: bold;">&lt;/</span>image48x48<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>image72x72<span style="color: #000000; font-weight: bold;">&gt;</span>testAppIcon72.png<span style="color: #000000; font-weight: bold;">&lt;/</span>image72x72<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;/</span>icon<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>customUpdateUI<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>customUpdateUI<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>allowBrowserInvocation<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>allowBrowserInvocation<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>android<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>manifestAdditions<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000; font-weight: bold;">&lt;!</span><span style="color: #000000;">[</span>CDATA<span style="color: #000000;">[</span><span style="color: #000000; font-weight: bold;">&lt;</span>manifest android<span style="color: #000000; font-weight: bold;">:</span>installLocation=<span style="color: #990000;">"auto"</span><span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>uses<span style="color: #000000; font-weight: bold;">-</span>permission android<span style="color: #000000; font-weight: bold;">:</span><span style="color: #004993;">name</span>=<span style="color: #990000;">"android.permission.WRITE_EXTERNAL_STORAGE"</span><span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>uses<span style="color: #000000; font-weight: bold;">-</span>permission android<span style="color: #000000; font-weight: bold;">:</span><span style="color: #004993;">name</span>=<span style="color: #990000;">"android.permission.DISABLE_KEYGUARD"</span><span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>uses<span style="color: #000000; font-weight: bold;">-</span>permission android<span style="color: #000000; font-weight: bold;">:</span><span style="color: #004993;">name</span>=<span style="color: #990000;">"android.permission.WAKE_LOCK"</span><span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;/</span>manifest<span style="color: #000000; font-weight: bold;">&gt;</span><span style="color: #000000;">]</span><span style="color: #000000;">]</span><span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;/</span>manifestAdditions<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;/</span>android<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;/</span>application<span style="color: #000000; font-weight: bold;">&gt;</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">What is important in this file is the application namespace which is in the first "application" tag. This means our descriptor is targeted to use AIR 2.6. If you specified AIR 2.5 instead, application would be published as AIR 2.5 (even if publishing
+    with ADT from AIR 2.6) so some optimisation improvements or new features would not be available / included in your app (only important bug-fixes and security changes would be included). If a new version of AIR will be available you should modify your
+    descriptor file to target it.</p>
+<p style="text-align: justify;">If you want to learn more what each tag does, check this link: <a href="http://help.adobe.com/en_US/air/build/WSfffb011ac560372f2fea1812938a6e463-8000.html" target="_blank">http://help.adobe.com/en_US/air/build/WSfffb011ac560372f2fea1812938a6e463-8000.html</a>.</p>
+<p style="text-align: justify;">I'm going to go through only few important tags for our app. The VersionNumber tag defines your application version and it is a number that could be a sequence of up to 3 numbers separated by periods. It is important to pay attention when changing the
+    version number every time you release a new version of your app as only this way the users will be able to upgrade their current version to a new one. This number is recognised when publishing your app to app stores. The VersionLabel tag is a string
+    representation which is not recognised by appstores - it is just to present it to the users in installation dialogs and is not required, if not present the VersionNumber will be used in its place.</p>
+<p style="text-align: justify;">We want our app to be fullscreen, have landscape aspect ratio and we don't want it to auto-rotate. These settings are in specified in the initialWindow tag. Also as a render mode we select the GPU to use hardware acceleration for our bitmaps.</p>
+<p style="text-align: justify;">In the icons section we provide three types of icons required by Android which are 36x36, 48x48, 72x72. The common practice is to create high quality icon first and then scale remaining down. If you don't provide any icon, the default one will be used.
+    It is not enough to specify icons only here in the descriptor file, you will also need to pass them to the ADT command to wrap them to the application package.</p>
+<p style="text-align: justify;">Android section is the group of settings specific to the Android platform only. android:installLocation="auto" makes your app movable to SD card (<a href="list-of-tips/78-how-to-make-air-for-android-app-movable-to-sd-card.html" target="_blank">http://sierakowski.eu/list-of-tips/78-how-to-make-air-for-android-app-movable-to-sd-card.html</a>).
+    Currently there is no way to include this option from the Flash IDE.</p>
+<p style="text-align: justify;">Very important part of every descriptor file is request for uses-permissions. Every user at the beginning of the installation process is asked to accept the risk of enabling these permission for an app. Rember to use only these permissions that are absolutely
+    necessary for your app to work. In case of our application it is not necessary to ask for WRITE_EXTERNAL_STORAGE as we won't write any data from our app so we should actually remove it (I left it as an example). But we do need DISABLE_KEYGUARD and
+    WAKE_LOCK to disable screen dimming and auto - keyboard locking to make our app permanently present to the user.</p>
+<p style="text-align: justify;">Below is the descriptor file that we are going to use when publishing for iOS. You can see that there are almost no differences really, only different icons (29, 48, 57, 72 and 512) and iPhone section. In the iPhone section there is the infoAdditions
+    section, where you can pass keys to request some functionality or behaviours in iOS. <span style="border-collapse: collapse; font-family: monospace; white-space: pre; line-height: normal;"><span style="color: #000000; font-weight: bold;">&lt;</span>key
+    <span
+        style="color: #000000; font-weight: bold;">&gt;</span>UIApplicationExitsOnSuspend<span style="color: #000000; font-weight: bold;">&lt;/</span>key<span style="color: #000000; font-weight: bold;">&gt;&lt;</span>true<span style="color: #000000; font-weight: bold;">/&gt; </span></span>will cause
+        that your app will be closed rather than "paused" when pressing the Home button. f you wanted your app to be targeted for iPhone 4 and or for iPad, you will need to request higher resolution and this is also done from the descriptor file settings.</p>
+<p style="text-align: justify;">The <span style="border-collapse: collapse; font-family: monospace; white-space: pre; line-height: normal;">UIDeviceFa</span><span style="border-collapse: collapse; font-family: monospace; white-space: pre; line-height: normal;">mily </span>tag specifies
+    a target device, 1 is fot iPod and iPhone, 2 for iPad. You can have &lt;string&gt;1&lt;/string&gt;&lt;string&gt;2&lt;/string&gt; to have your app working on both type of devices.</p>
+<p style="text-align: justify;">Add <span style="border-collapse: collapse; font-family: monospace; white-space: pre; line-height: normal;">&lt;requestedDisplayResolution&gt;high&lt;/requestedDisplayResolution&gt; </span>tag after &lt;/infoAdditions&gt; if you want your app to use high
+    resolution Retina displays (iPhone 4).</p>
+<p style="text-align: justify;">To learn more about iOS and Android specific settings follow this link: <a style="color: #473213; text-decoration: none; padding: 2px;" href="http://help.adobe.com/en_US/air/build/WSfffb011ac560372f-5d0f4f25128cc9cd0cb-7ffe.html" target="_blank">http://help.adobe.com/en_US/air/build/WSfffb011ac560372f-5d0f4f25128cc9cd0cb-7ffe.html</a>.</p>
+<p style="text-align: justify;">Let's name the Apple descriptor file testAppIOS-app.xml.</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;?</span>xml <span style="color: #004993;">version</span>=<span style="color: #990000;">"1.0"</span> encoding=<span style="color: #990000;">"UTF-8"</span> standalone=<span style="color: #990000;">"no"</span> <span style="color: #000000; font-weight: bold;">?&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;</span>application xmlns=<span style="color: #990000;">"http://ns.adobe.com/air/application/2.6"</span><span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>id<span style="color: #000000; font-weight: bold;">&gt;</span>eu.sierakowski.TestApp<span style="color: #000000; font-weight: bold;">&lt;/</span>id<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>versionNumber<span style="color: #000000; font-weight: bold;">&gt;</span>1.0.0<span style="color: #000000; font-weight: bold;">&lt;/</span>versionNumber<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>filename<span style="color: #000000; font-weight: bold;">&gt;</span>TestApp<span style="color: #000000; font-weight: bold;">&lt;/</span>filename<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>description<span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>name<span style="color: #000000; font-weight: bold;">&gt;</span>TestApp<span style="color: #000000; font-weight: bold;">&lt;/</span>name<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>copyright<span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>initialWindow<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>content<span style="color: #000000; font-weight: bold;">&gt;</span>testApp.swf<span style="color: #000000; font-weight: bold;">&lt;/</span>content<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>systemChrome<span style="color: #000000; font-weight: bold;">&gt;</span>standard<span style="color: #000000; font-weight: bold;">&lt;/</span>systemChrome<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>transparent<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>transparent<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>visible<span style="color: #000000; font-weight: bold;">&gt;</span>true<span style="color: #000000; font-weight: bold;">&lt;/</span>visible<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>fullScreen<span style="color: #000000; font-weight: bold;">&gt;</span>true<span style="color: #000000; font-weight: bold;">&lt;/</span>fullScreen<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>aspectRatio<span style="color: #000000; font-weight: bold;">&gt;</span>landscape<span style="color: #000000; font-weight: bold;">&lt;/</span>aspectRatio<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>renderMode<span style="color: #000000; font-weight: bold;">&gt;</span>gpu<span style="color: #000000; font-weight: bold;">&lt;/</span>renderMode<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>autoOrients<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>autoOrients<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;/</span>initialWindow<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>icon<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>image29x29<span style="color: #000000; font-weight: bold;">&gt;</span>testAppIcon29.png<span style="color: #000000; font-weight: bold;">&lt;/</span>image29x29<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>image48x48<span style="color: #000000; font-weight: bold;">&gt;</span>testAppIcon48.png<span style="color: #000000; font-weight: bold;">&lt;/</span>image48x48<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>image57x57<span style="color: #000000; font-weight: bold;">&gt;</span>testAppIcon57.png<span style="color: #000000; font-weight: bold;">&lt;/</span>image57x57<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>image72x72<span style="color: #000000; font-weight: bold;">&gt;</span>testAppIcon72.png<span style="color: #000000; font-weight: bold;">&lt;/</span>image72x72<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>image512x512<span style="color: #000000; font-weight: bold;">&gt;</span>testAppIcon512.png<span style="color: #000000; font-weight: bold;">&lt;/</span>image512x512<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;/</span>icon<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>customUpdateUI<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>customUpdateUI<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>allowBrowserInvocation<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>allowBrowserInvocation<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>iPhone<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>InfoAdditions<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">      <span style="color: #000000; font-weight: bold;">&lt;!</span><span style="color: #000000;">[</span>CDATA<span style="color: #000000;">[</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>key<span style="color: #000000; font-weight: bold;">&gt;</span>UIDeviceFamily<span style="color: #000000; font-weight: bold;">&lt;/</span>key<span style="color: #000000; font-weight: bold;">&gt;&lt;</span>array<span style="color: #000000; font-weight: bold;">&gt;&lt;</span>string<span style="color: #000000; font-weight: bold;">&gt;</span><span style="color: #000000; font-weight: bold;">1</span><span style="color: #000000; font-weight: bold;">&lt;/</span>string<span style="color: #000000; font-weight: bold;">&gt;&lt;/</span>array<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>key<span style="color: #000000; font-weight: bold;">&gt;</span>UIApplicationExitsOnSuspend<span style="color: #000000; font-weight: bold;">&lt;/</span>key<span style="color: #000000; font-weight: bold;">&gt;&lt;</span>true<span style="color: #000000; font-weight: bold;">/&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000;">]</span><span style="color: #000000;">]</span><span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;/</span>InfoAdditions<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;/</span>iPhone<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">&lt;/</span>application<span style="color: #000000; font-weight: bold;">&gt;</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Providing you have the swf file, both descriptor files and you have already created all variations of testApp icons, everything in the same folder which is d:\\projects\\testapp\\publishing, you are still not done yet :)</p>
+<p style="text-align: justify;">You are missing the Default.png file - the splash screen for iOS. This file is shown as the first thing when launching your application and will disappear when it is loaded and ready to use. If you don't provide this file, the user will see only a white
+    screen. At the moment there is no splash screen option for Android. There are different splash screen sizes for different version of iDevices. In example iPad will be looking for Default-Landscape.png and Default-Portrait.png files <a href="http://blogs.adobe.com/cantrell/archives/2010/11/how-to-build-an-air-application-for-both-the-iphone-and-ipad.html"
+        target="_blank">http://blogs.adobe.com/cantrell/archives/2010/11/how-to-build-an-air-application-for-both-the-iphone-and-ipad.html</a>, iPhone 4 Default @ 2x.png. To learn more see "iOS launch images" section of <a href="http://help.adobe.com/en_US/air/build/WSfffb011ac560372f-5d0f4f25128cc9cd0cb-7ffe.html"
+        target="_blank">http://help.adobe.com/en_US/air/build/WSfffb011ac560372f-5d0f4f25128cc9cd0cb-7ffe.html</a> and <span style="line-height: 26px;"><a href="http://developer.apple.com/library/ios/#qa/qa1588/_index.html">http://developer.apple.com/library/ios/#qa/qa1588/_index.html</a></span>.</p>
+<h3><br />Certificates and provisioning profile for iOS</h3>
+<p style="text-align: justify;">You are also still missing the certificate file and provisioning profile required when publishing the iOS version.</p>
+<p style="text-align: justify;">If you don't have your p12 certificate already you can easily create one from the Flash IDE. Click on Edit button for your Adobe AIR settings in the Properties panel, then select Signature tab and Create button to create and save your certificate (as
+    on the screnshoot below). Now you are done for Android.</p>
+<p><img src="http://sierakowski.eu/examples/AIR_Android_iOS/creatingCertificate.jpg" alt="Creating a certificate" /></p>
+<p style="text-align: justify;">Unfortunately it is not that simple for iOS. Beside certificate you need to get the provisioning profile from developer.apple.com by signing in to became Apple iOS developer and paying $99. If you want to publish your app just for testing you will need
+    to get UID of your iDevice and provide it when creating your provisioning. It is quite complicated at first. To learn more about the whole process watch Lee Brimelow's video tutorial: <a href="http://www.gotoandlearn.com/play.php?id=133" target="_blank">http://www.gotoandlearn.com/play.php?id=133</a>.</p>
+<p style="text-align: justify;">Ok, once you received your provisioning profile file, you have all of the required prerequisites to publish your app for Android and iOS. Now it is time to download the AIR 2.6 files and build the ADT commands.</p>
+<h3><br />Publishing with AIR 2.6 ADT</h3>
+<p style="text-align: justify;">First you need to download the latest AIR SDK version from Adobe. At the time of writing this article it is the version 2.6. Adobe is working hard on the version 2.7 that is told to significantly improve performance on iOS but the release date is not
+    known yet.</p>
+<p>You can download the AIR sdk from here: <a href="http://www.adobe.com/products/air/sdk/">http://www.adobe.com/products/air/sdk/</a></p>
+<p style="text-align: justify;">Once it is downloaded, unzip it let say to d:\\AIR folder.</p>
+<p style="text-align: justify;">Using command line may not be that handy as using Flash GUI. There are some tools from the Flash community written in AIR or Java that have graphical interfaces making the whole process easier. You can also create a batch (.bat) file that you could then
+    reuse just by changing some parameters for different projects.</p>
+<p style="text-align: justify;">Publishing for Android and iOS is slightly different as you can see below.</p>
+<p style="text-align: justify;">First let's create publishForAndroid.bat file and save it in your d:\\projects\\testapp\\publishing folder (Copy and paste it as one line, I divided it to make it easier to read).</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #004993;">d</span><span style="color: #000000; font-weight: bold;">:</span>\\air\\bin\\adt.bat <span style="color: #000000; font-weight: bold;">-</span><span style="color: #9900cc; font-weight: bold;">package</span> <span style="color: #000000; font-weight: bold;">-</span><span style="color: #004993;">target</span> apk <span style="color: #000000; font-weight: bold;">-</span>storetype pkcs12 </span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">-</span>keystore your_own_certificate.p12 testApp.apk testAppAndroid<span style="color: #000000; font-weight: bold;">-</span>app.xml </span>
+<span style="vertical-align: top;">testApp.swf testAppIcon36.png testAppIcon48.png testAppIcon72.png</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Now create publishForIOS.bat file, save it in the same folder as before.</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #004993;">d</span><span style="color: #000000; font-weight: bold;">:</span>\\air\\bin\\adt <span style="color: #000000; font-weight: bold;">-</span><span style="color: #9900cc; font-weight: bold;">package</span> <span style="color: #000000; font-weight: bold;">-</span><span style="color: #004993;">target</span> ipa<span style="color: #000000; font-weight: bold;">-</span>ad<span style="color: #000000; font-weight: bold;">-</span>hoc <span style="color: #000000; font-weight: bold;">-</span>storetype pkcs12 </span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">-</span>keystore your_own_certificate.p12 </span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">-</span>provisioning<span style="color: #000000; font-weight: bold;">-</span>profile your_ownProvision.mobileprovision</span>
+<span style="vertical-align: top;">testApp.ipa testAppiOS<span style="color: #000000; font-weight: bold;">-</span>app.xml testApp.swf </span>
+<span style="vertical-align: top;">testAppIcon29.png testAppIcon48.png testAppIcon57.png</span>
+<span style="vertical-align: top;">testAppIcon72.png testAppIcon512.png Default.png</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">I suggest to do not run these batch files directly but execute them from the command prompt console (cmd). This will allow you to see if there are any errors during the publishing (and the error messages are very helpful), batch files run directly would
+    close immediately. Note that when publishing, you will be asked to provide your certificate password, the same one that you specified when creating your p12 key.</p>
+<p style="text-align: justify;">Executing publishForAndroid.bat will produce testApp.apk and publishForIOS will produce testApp.ipa.</p>
+<p style="text-align: justify;">As you can see both commands are very similar, the difference is the -target parameter which is "apk" for Android and "ipa" for iOS. You could provide different target options that would allow you to package release for debugging, testing with emulator
+    (Android only - learn more: <a href="http://flashandroid.mikalesblog.com/?p=21" target="_blank">http://flashandroid.mikalesblog.com/?p=21</a>&gt;), or for distribution on app store. When testing a debug version you can actually receive trace outputs
+    from your device which is pretty cool. To learn more follow this link: <a href="http://help.adobe.com/en_US/air/build/WS901d38e593cd1bac1e63e3d128cdca935b-8000.html" target="_blank">http://help.adobe.com/en_US/air/build/WS901d38e593cd1bac1e63e3d128cdca935b-8000.html</a>.</p>
+<p style="text-align: justify;">For iOS we also need to provide provisioning file, different icons and Default.png and its variations for iPad and/or iPhone 4 (remember about capital D in the file name). If your app (this applies to all platforms) loads other swf files, xml files or
+    image files, they have to be included in the package by providing these file names to ADT. When speaking about loading swf files, iOS version won't execute any code in external swf files, but you probably know about that already?</p>
+<p style="text-align: justify;">You probably noticed that publishing for iOS take much more time. The reason is that the publishing for iOS process is completely different. The ActionScript code is converted to a native code using Ahead of Time compilation and the AIR itself is actually
+    included in the package. To learn more visit this link: <a href="http://www.adobe.com/devnet/logged_in/abansod_iphone.html" target="_blank">http://www.adobe.com/devnet/logged_in/abansod_iphone.html</a>or this: <a href="http://www.mikechambers.com/blog/files/presentations/fitc_amsterdam_2010/flash_iphone_fitc_2010.pdf"
+        target="_blank">http://www.mikechambers.com/blog/files/presentations/fitc_amsterdam_2010/flash_iphone_fitc_2010.pdf</a>. This is the reason why ipa files are much bigger when comparing to Android apk files that only contain your app code and assets.</p>
+<p style="text-align: justify;">If you are just trying to test your app on iDevice and you don't want to wait so long, you can use interpreter mode:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">-</span><span style="color: #004993;">target</span> ipa<span style="color: #000000; font-weight: bold;">-</span>test<span style="color: #000000; font-weight: bold;">-</span>interpreter</span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<div style="text-align: justify;">This actually doesn't convert ActionScript byte code but works like AIR on Android, which is that the bytecode is interpreted at runtime. But be carefull, as the performance of interpreter mode and converted code might be different. Also with interpreter
+    you can load external swfs with the code, which is not possible with converted code that you are going to publish to the AppStore.</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">The Android AIR apps force the users to install AIR runtime on their device (the users are asked to do that when trying to run an app and the AIR is not installed yet). [UPDATE (August 2011): Now with AIR 3.0 you can embed the AIR runtimes into the package,
+    learn more: <span style="line-height: 26px;"><a href="http://www.leebrimelow.com/?p=2954">http://www.leebrimelow.com/?p=2954</a>]</span></p>
+<p>After executing both batch files you should see the apk and ipa files in your published folder.</p>
+<p><img src="http://sierakowski.eu/examples/AIR_Android_iOS/folders.jpg" alt="Files structure" /></p>
+<h3><br />Testing on Android devices</h3>
+<p style="text-align: justify;">To test our app on Android, just plug your device as a disk drive, copy the apk file to your phone and disconnect it or change connection mode to "charge only" to get back access to the SD card. Then launch a file browser (I'm using Astro file manager),
+    browse to the apk file and execute it. This will install the testApp and you should see the new icon in your Applications listing. Now you are ready for testing :)</p>
+<p><img src="http://sierakowski.eu/examples/AIR_Android_iOS/android.jpg" alt="Android screens" /></p>
+<p>&nbsp;</p>
+<p><strong>[Update March 2012]</strong></p>
+<p style="text-align: justify;">Another way to quickly install an app on Android device is to use adb - a part of Andriod SDK. Using this method, you don't need to copy any apk files.</p>
+<p style="text-align: justify;">So first go to settings on your Android 4.x device and in Developer options enable USB debugging. On Android 2.x go to Settings, Applications, Development and select USB Debugging.</p>
+<p style="text-align: justify;">You don't have to download Android SDK as the adb is also included in the AIR sdk in lib\\android\\bin folder.</p>
+<p style="text-align: justify;">So once you have your device connected, all you do is type this command:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">adb install <span style="color: #000000; font-weight: bold;">&lt;</span>path to your apk file<span style="color: #000000; font-weight: bold;">&gt;</span></span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">And after you type it, you should see something like this:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">*</span> daemon not <span style="color: #004993;">running</span>. starting it now on port <span style="color: #000000; font-weight: bold;">5037</span> <span style="color: #000000; font-weight: bold;">*</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">*</span> daemon started successfully <span style="color: #000000; font-weight: bold;">*</span></span>
+<span style="vertical-align: top;"><span style="color: #000000; font-weight: bold;">2784</span> KB<span style="color: #000000; font-weight: bold;">/</span>s <span style="color: #000000;">(</span><span style="color: #000000; font-weight: bold;">9796983</span> bytes <span style="color: #0033ff; font-weight: bold;">in</span> 3.436s<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">        pkg<span style="color: #000000; font-weight: bold;">:</span> <span style="color: #000000; font-weight: bold;">/</span><span style="color: #004993;">data</span><span style="color: #000000; font-weight: bold;">/</span>local<span style="color: #000000; font-weight: bold;">/</span>tmp<span style="color: #000000; font-weight: bold;">/</span>jumpingDroid.apk</span>
+<span style="vertical-align: top;">Success</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>To print a list of attached devices use:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">adb devices</span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">If you want to use adb install on a Kindle Fire device, follow this tutorial: <a href="http://www.jayceooi.com/2011/12/13/how-to-install-kindle-fire-adb-usb-driver/">http://www.jayceooi.com/2011/12/13/how-to-install-kindle-fire-adb-usb-driver/</a></p>
+<p>&nbsp;</p>
+<h3>Testing on iOS devices</h3>
+<p style="text-align: justify;">To publish to iPhone/iPod/iPad you need to use iTunes. The very first step after you plug your iOS device is to drag and drop your provisioning file to iTunes. You won't be able to successfully deploy your app without this step. Next just drag and drop
+    the ipa file to your Library Apps section, then sync your device and the testApp icon will appear on the screen.</p>
+<p><img src="http://sierakowski.eu/examples/AIR_Android_iOS/itunes1.jpg" alt="iTunes apps" /></p>
+<p><img src="http://sierakowski.eu/examples/AIR_Android_iOS/itunes2.jpg" alt="iTunes syncing" /></p>
+<p style="text-align: justify;">Remember that if you want to sync a newer version of your app, you need to remove the old one from your device first. Everybody knows how do that :) if not: press an app icon for a bit longer to see the small cross button that removes selected app (as
+    on the screenshot below).</p>
+<p><img src="http://sierakowski.eu/examples/AIR_Android_iOS/iPod.jpg" alt="iPod screens" /></p>
+<p style="text-align: justify;"><span style="line-height: 26px;">Youtube video below shows the testApp on HTC Desire (800 x 480 pixels) and iPod Touch (480 x 320 pixels).</span></p>
+<p><object style="width: 500px; height: 305px;" data="http://www.youtube.com/v/jV8AD1nKjBk?version=3" type="application/x-shockwave-flash" width="100" height="100"><param name="allowfullscreen" value="true" /><param name="allowscriptaccess" value="always" /><param name="src" value="http://www.youtube.com/v/jV8AD1nKjBk?version=3" />
+</object></p>
+<p><span style="line-height: 26px;">&nbsp;</span></p>
+<h3>Submitting to Markets and AppStores</h3>
+<p style="text-align: justify;">Now when you spent tens of hours testing your app and you are 100% sure it works as expected then you are ready to share it with the world. Publishing to the Android Market is very easy process. You will need to prepare screenshots, icons, description
+    and pay $25 registration fee. The whole process is very simple and your app will be there within minutes. Here is the link to the Android Market: <a href="https://market.android.com/publish" target="_blank">https://market.android.com/publish</a>.</p>
+<p style="text-align: justify;">The Amazon Apstore for Android is free now as they just launched it. They actually review your app first, this usually takes a week. Note that you need to change download URL parameter when publishing your AIR app. Learn more here: <a href="http://blogs.adobe.com/cantrell/archives/2011/03/air-2-6-applications-and-the-amazon-appstore-for-android.html"
+        target="_blank">http://blogs.adobe.com/cantrell/archives/2011/03/air-2-6-applications-and-the-amazon-appstore-for-android.html</a>. The Amazon Appstore link is here: <a href="https://developer.amazon.com/help/faq.html" target="_blank">https://developer.amazon.com/help/faq.html</a></p>
+<p style="text-align: justify;">When it comes to publishing to the Apple Appstore, things are slightly more difficult. You need to actually use different provisioning profile when publishing with ADT. AppStore also has the approval process. To learn more read Adobe article: <a href="http://www.adobe.com/devnet/flash/articles/app_store_guide.html"
+        target="_blank">http://www.adobe.com/devnet/flash/articles/app_store_guide.html</a></p>
+<h3><br />Conclusion</h3>
+<p style="text-align: justify;">This quick but long :) tutorial only scratches the surface of developing mobile AIR apps. So far you have learnt how to create basic configuration files, publish and test simple app on Android and iOS device. The next very important subject to cover is
+    optimisation for mobiles. When I started testing my first apps I was very disappointed seeing them running only 5 frames per second on iPhone. But when learning and testing different optimisation techniques and just experimenting I was able to reach
+    60 frames per second. My latest project at the time of writing this article is a game called JumpingDroid and I spent more time optimising it than building the actual game logic. You can play it for free from Android Market and Amazon AppStore. The
+    same game is also running very well on iOS devices: <a href="blog/23-blog/80-jumping-droid-runs-60-frames-per-second-on-ipod-touch-with-air-26.html" target="_blank">http://sierakowski.eu/blog/23-blog/80-jumping-droid-runs-60-frames-per-second-on-ipod-touch-with-air-26.html</a>.
+    I have learnt a lot when building it and I'm currently writing another article about some optimisation tips for mobile AIR apps.</p>
+<p style="text-align: justify;">AIR for mobile is a new technology and there aren't many (any?) books and materials yet that would cover everything. There are plenty of very good documentation and blog post provided by Adobe, links to some of them can be found below in the Links section.
+    Also another very good source of solutions for common problems is the official Adobe forum: <a href="http://forums.adobe.com/community/air/development/android">http://forums.adobe.com/community/air/development/android</a>. There are plenty of community
+    members that are more active then Adobe employees (ie Colin <img title="Wink" src="http://sierakowski.eu/legacy/tiny_mce/emotions/smiley-wink.gif" alt="Wink" border="0" />) and I promise you won't be waiting long for an answer (unless your question
+    has been answered 100 times already and you didn't search for answer before posting).</p>
+<p style="text-align: justify;">I think the AIR is really great technology, Adobe is spending a lot of effort to put more and more functionalities and to further optimise it. I hope you won't find it very hard to learn and I wish you good luck with your apps and don't forget to share
+    your links to the markets and appstores!</p>
+<p>And if you find anything that could be corrected in this article, please also let me know!</p>
+<h3><br />What next? - learn optmisation techniques!</h3>
+<p style="text-align: justify;">If you came to this point then you are ready to move on and create you first game or app. If you want to learn some of the optimisation tips and techniques that I used when developing Jumping Droid game, read this article: <span style="line-height: 26px;"><a href="list-of-tips/86-building-mobile-games-in-adobe-air-optimization-techniques-used-in-jumping-droid-game.html" target="_blank">http://sierakowski.eu/list-of-tips/86-building-mobile-games-in-adobe-air-optimization-techniques-used-in-jumping-droid-game.html</a></span></p>
+<h3><br />Links</h3>
+<p>Links used in this article:</p>
+<ul>
+    <li>The latest AIR SDK: <span style="line-height: 26px;"><a href="http://www.adobe.com/products/air/sdk/" target="_blank">http://www.adobe.com/products/air/sdk/</a></span></li>
+    <li><span style="line-height: 21px;">What's new in Adobe AIR 2.6: <a href="http://www.adobe.com/devnet/air/articles/whats-new-in-air-26.html" target="_blank">http://www.adobe.com/devnet/air/articles/whats-new-in-air-26.html<br /></a></span><a href="http://www.adobe.com/devnet/air/articles/ios_features_in_air26.html"
+            target="_blank">http://www.adobe.com/devnet/air/articles/ios_features_in_air26.html</a></li>
+    <li><span style="line-height: 21px;">AIR application descriptor elements: <span style="line-height: 26px;"><a href="http://help.adobe.com/en_US/air/build/WSfffb011ac560372f2fea1812938a6e463-8000.html" target="_blank">http://help.adobe.com/en_US/air/build/WSfffb011ac560372f2fea1812938a6e463-8000.html</a></span></span>
+    </li>
+    <li><span style="line-height: 21px;">ActionScript API's specific for mobile apps: </span><a href="http://help.adobe.com/en_US/as3/iphone/WS789ea67d3e73a8b24b55b57a124b32b5b57-7ffe.html">http://help.adobe.com/en_US/as3/iphone/WS789ea67d3e73a8b24b55b57a124b32b5b57-7ffe.html</a></li>
+    <li><span style="line-height: 21px;">Setting mobile application properties: <span style="line-height: 26px;"><a href="http://help.adobe.com/en_US/air/build/WSfffb011ac560372f-5d0f4f25128cc9cd0cb-7ffe.html" target="_blank">http://help.adobe.com/en_US/air/build/WSfffb011ac560372f-5d0f4f25128cc9cd0cb-7ffe.html</a></span></span>
+    </li>
+    <li><span style="line-height: 21px;"><span style="line-height: 26px;">Building apps for iPhone and iPad: </span><span style="line-height: 26px;"><a href="http://blogs.adobe.com/cantrell/archives/2010/11/how-to-build-an-air-application-for-both-the-iphone-and-ipad.html" target="_parent">http://blogs.adobe.com/cantrell/archives/2010/11/how-to-build-an-air-application-for-both-the-iphone-and-ipad.html</a></span></span>
+    </li>
+    <li><span style="line-height: 21px;"><span style="line-height: 26px;">Apple developer, provisioning profile, certificates video tutorial: </span><span style="line-height: 26px;"><a href="http://www.gotoandlearn.com/play.php?id=133" target="_blank">http://www.gotoandlearn.com/play.php?id=133</a></span></span>
+    </li>
+    <li><span style="line-height: 21px;"><span style="line-height: 26px;">Testing AIR apps with Android emulator: </span><span style="line-height: 26px;"><a href="http://flashandroid.mikalesblog.com/?p=21" target="_blank">http://flashandroid.mikalesblog.com/?p=21</a></span></span>
+    </li>
+    <li><span style="line-height: 21px;"><span style="line-height: 26px;">ADT package commands: </span><span style="line-height: 26px;"><a href="http://help.adobe.com/en_US/air/build/WS901d38e593cd1bac1e63e3d128cdca935b-8000.html">http://help.adobe.com/en_US/air/build/WS901d38e593cd1bac1e63e3d128cdca935b-8000.html</a></span></span>
+    </li>
+    <li><span style="line-height: 21px;">More about AOT compilation: <span style="line-height: 26px;"><a href="http://www.mikechambers.com/blog/files/presentations/fitc_amsterdam_2010/flash_iphone_fitc_2010.pdf" target="_blank">http://www.mikechambers.com/blog/files/presentations/fitc_amsterdam_2010/flash_iphone_fitc_2010.pdf</a> and </span></span>
+        <a
+            href="http://www.adobe.com/devnet/logged_in/abansod_iphone.html">http://www.adobe.com/devnet/logged_in/abansod_iphone.html</a>
+    </li>
+    <li><span style="line-height: 21px;">Guide for Apple App Store submissions: <span style="line-height: 26px;"><a href="http://www.adobe.com/devnet/flash/articles/app_store_guide.html" target="_blank">http://www.adobe.com/devnet/flash/articles/app_store_guide.html</a></span></span>
+    </li>
+</ul>
+<p></p>
+<div id="jc">
+    <div id="comments">
+        <h4>Comments imported from the original article @sierakowski.eu</h4>
+        <div id="comments-list" class="comments-list">
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#16</a> <span class="comment-author">stpapadakis</span> <span class="comment-date">2013-07-30 07:00</span>
+                            <div id="comment-body-190" class="comment-body">Hello. I tried followed your instructions but my flash app stil doesnt' run in full screen mode. Do you have any suggestions?</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#15</a> <span class="comment-author">stpapadakis</span> <span class="comment-date">2013-07-30 06:54</span>
+                            <div id="comment-body-189" class="comment-body">Hello! I followed your intstructions but i still can make my app play in full screen mode. I used your .as file in my flash file but still nothing happened.<br />Any suggestions?</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#14</a> <span class="comment-author">EricR</span> <span class="comment-date">2012-11-30 14:42</span>
+                            <div id="comment-body-190" class="comment-body">I am just beginning my journey of making portable games using Flash. This is an amazingly easy tutorial. Thank you for posting stuff like this!!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#13</a> <span class="comment-author">jossu</span> <span class="comment-date">2012-10-13 21:49</span>
+                            <div id="comment-body-150" class="comment-body">Iam using Flash cs6 and i have a "base" movieclip on stage. Still i cant scale it according to different resolutions. could anybody help ? <br />stageWidth = Math.max(stage.fullScreenWidth , stage.fullScreenHeigh t);<br />stageHeight
+                                = Math.min(stage.fullScreenWidth , stage.fullScreenHeigh t);<br />heightOffset = stageHeight * .2;<br /><br />base.width = stageWidth; <br />base.height = stageHeight;</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#12</a> <span class="comment-author">Sean Smith</span> <span class="comment-date">2012-09-14 14:25</span>
+                            <div id="comment-body-190" class="comment-body">Holy Crap! You are a very smart man and I have learned so much from you on this and the game optimization post, that my head wants to float off my body and explode! THANK YOU!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#11</a> <span class="comment-author">kris</span> <span class="comment-date">2012-05-08 16:03</span>
+                            <div id="comment-body-190" class="comment-body">great tutorial! thanks for tanking your time and sharing!!!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#10</a> <span class="comment-author">Vinicius Oliveira</span> <span class="comment-date">2012-01-27 11:05</span>
+                            <div id="comment-body-117" class="comment-body"><img src="http://sierakowski.eu/components/com_jcomments/images/smiles/lol.gif" alt=":lol:" border="0" /> <br />HOW I do WAKE_LOCK in IOS developing, to screen not dim ?</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#9</a> <span class="comment-author">daniel</span> <span class="comment-date">2012-01-23 12:10</span>
+                            <div id="comment-body-116" class="comment-body">I'm a bit puzzled with this statement:<br /><br />"If your app (this applies to all platforms) loads other swf files, xml files or image files, they have to be included in the package by providing these file names to ADT. When
+                                speaking about loading swf files, iOS version won't execute any code in external swf files, but you probably know about that already?"<br /><br />I know the limitation of iOS that make it impossible to load an swf file
+                                (with code inside) from another sandbox domain (internet) into a running Main (local), but is this true for packed-with-ipa asset-type-swf files as well? <br /><br />I need to come up with a strategy for an application
+                                - and i would love to walk the modular way by loading class definitions into a core. Is that a no-go on iOS, or packing my modules with the ipa would work?<br /><br />Thank You.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#8</a> <span class="comment-author">skyser</span> <span class="comment-date">2012-01-11 15:42</span>
+                            <div id="comment-body-190" class="comment-body">Yes, thank you for this. I was wrestling with basic issues like accessing the fullscreen and getting actual stage resolution. This tut helped me where the Adobe developer connection FAILED!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#7</a> <span class="comment-author">Felix</span> <span class="comment-date">2011-09-08 20:47</span>
+                            <div id="comment-body-93" class="comment-body">Great clear steps.<br /><br />But I get a strange error:"Compilation failed..."<br /><br />When I publish with flash cs5.5 it works great on iPhone but without including any icons. When i include the incons in flash GUI and
+                                publish, iTunes reports synch error: Unknown Error:0xE800000 4C". So i tried this solution with ADT but still get stuck...<br /><br />Can anyone help? i neet to know what the Compilation failed referes to to be able to
+                                narrow the scope of the problem.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#6</a> <span class="comment-author">Bill Deakin</span> <span class="comment-date">2011-09-07 16:00</span>
+                            <div id="comment-body-92" class="comment-body">Hi<br /><br />Very useful tutorial, one of the most comprehensive I've read and I've read a lot of these over the past couple of weeks!<br /><br />I've followed most of this and have a test app installed and working but I can't
+                                get the "Full Screen" option to work!<br /><br />I set the fullScreen node to full exactly like in your example descriptor file above, but ass soon as the loading screen vanishes the toolbar appears.<br /> <br />So am I
+                                doing something wrong, or is this a bug in the adt? Did you manage to hide the toolbar OK?<br /> <br />Cheers<br /><br />Billy</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#5</a> <span class="comment-author">Tadeu</span> <span class="comment-date">2011-06-02 15:18</span>
+                            <div id="comment-body-67" class="comment-body">Awsome ! really awsome tutorial!<br />Thanks Sierakowski</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#4</a> <span class="comment-author">woj</span> <span class="comment-date">2011-05-27 08:19</span>
+                            <div id="comment-body-190" class="comment-body">@Bjorn Thanks! Difference in size is due to the fact that the AIR itself is packed into the ipa files along with your code and assets. On Android users need to install AIR runtime as a separate app so the actual apk files contain
+                                only your code, nothing else and therefore are smaller.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#3</a> <span class="comment-author">Bjorn</span> <span class="comment-date">2011-05-27 07:37</span>
+                            <div id="comment-body-63" class="comment-body">Nice tutorial.<br />I do have a question. Do you know why a ipa file becomes more then 3MB even if my swf is less then 90Kb? When I add my file to the app store it even runs up to 6/7MB. I do use optimisation techniques.<br
+                                />It's hard to find any information about this. Ths same project for Android needs less conversion and runs a lot beter.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#2</a> <span class="comment-author">Czadu</span> <span class="comment-date">2011-05-23 20:33</span>
+                            <div id="comment-body-190" class="comment-body">Great resource, thanks for sharing this!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#1</a> <span class="comment-author">J</span> <span class="comment-date">2011-05-18 00:28</span>
+                            <div id="comment-body-190" class="comment-body">Awesome tutorial!</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,84 @@
+<div class="recycle">Article imported from <em>http://sierakowski.eu/list-of-tips/119-getting-certificates-and-provisioning-profiles-for-ios-on-windows.html</em></div>
+<div class="yellowbox">
+    <p>Sources:</p>
+    <p><a href="http://www.emanueleferonato.com/2011/09/22/creation-of-an-iphone-app-with-flash-and-without-a-mac-for-all-windows-lovers/">http://www.emanueleferonato.com/2011/09/22/creation-of-an-iphone-app-with-flash-and-without-a-mac-for-all-windows-lovers/</a></p>
+    <p><a href="http://www.adobe.com/devnet/air/articles/packaging-air-apps-ios.html">http://www.adobe.com/devnet/air/articles/packaging-air-apps-ios.html</a></p>
+</div>
+<p>&nbsp;</p>
+<p>Steps for development and distributions are the same.</p>
+<p>1. Install Win32 OpenSSL Light. It requires MS Visual C++ 2008 Redistributable Package. Both download links are available here <a style="line-height: 2em;" href="http://slproweb.com/products/Win32OpenSSL.html">http://slproweb.com/products/Win32OpenSSL.html</a></p>
+<p>2. After installation open cmd and navigate to OpenSSL-Win32\\bin if this is the folder you install it to.</p>
+<p>First set the env variable:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">set</span> RANDFILE=.rnd then</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>Then type:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">openssl</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>3. First generate the key:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">genrsa <span style="color: #000000; font-weight: bold;">-</span>out thekey.key <span style="color: #000000; font-weight: bold;">2048</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>4. Next generate certificate signing request, C stands for your country code:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">req <span style="color: #000000; font-weight: bold;">-</span><span style="color: #0033ff; font-weight: bold;">new</span> <span style="color: #000000; font-weight: bold;">-</span>key thekey.key <span style="color: #000000; font-weight: bold;">-</span>out certificate.csr  <span style="color: #000000; font-weight: bold;">-</span>subj <span style="color: #990000;">"/emailAddress=youraddress@domain.com, CN=firstname lastname, C=IE"</span> <span style="color: #000000; font-weight: bold;">-</span>config <span style="color: #990000;">"openssl.cfg"</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>Note: -config "openssl.cfg" is necessary only if you previously got the warning you couldn&rsquo;t open the config file</p>
+<p>5. Log on to developer.apple.com, go to iOS Dev center, click on Certificates, Identifiers &amp; Profiles. Click on Certificates and select Deveopment or Production category depending what you want to do. Create new certificate and when asked to upload
+    the cert signing request select the certificate.csr file you just created. Download it. For development certificate it will be ios_development.cer, for distribution ios_distribution.cer.</p>
+<p>6. Next go back to your openssl and generate pem file:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <table class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <tbody>
+                <tr class="li1">
+                    <td style="width: 1px; background: #f0f0f0; vertical-align: top; color: #676f73; border-right: 1px dotted #dddddd; font-size: 12px; text-align: right;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">1
+</pre>
+                    </td>
+                    <td style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;">
+                        <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">x509 <span style="color: #000000; font-weight: bold;">-</span><span style="color: #0033ff; font-weight: bold;">in</span> ios_distribution.cer <span style="color: #000000; font-weight: bold;">-</span>inform DER <span style="color: #000000; font-weight: bold;">-</span>out ios_distribution.pem <span style="color: #000000; font-weight: bold;">-</span>outform PEM</span></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>7. Now you will convert the pem file into p12:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">pkcs12 <span style="color: #000000; font-weight: bold;">-</span>export <span style="color: #000000; font-weight: bold;">-</span>inkey thekey.key <span style="color: #000000; font-weight: bold;">-</span><span style="color: #0033ff; font-weight: bold;">in</span> ios_distribution.pem <span style="color: #000000; font-weight: bold;">-</span>out iphone_dist.p12</span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>For development obviously you will use ios_development.pem as intput and iphone_dev.p12 as output, whatever you like really.</p>
+<p>&nbsp;</p>
+<p>8. Next you need to create a new provisioning profile. Go to Provisioning Profiles, click create new, select category, iOS APP Development or App Store for production. For getting the development provisioning you will need to select a device that you
+    added. Next select App ID and then certificate that you just created. Bear in mind that you need separate two certificates for development and distribution - but the process of creating them is the same.</p>
+<p>When you finish everything you are ready to 'compile' your iOS app. You will need your .mobileprovision file and .p12. Plug your iDevice, open iTunes and drag development provisioning and the generated .ipa file to the apps category in iTunes, next select
+    that app in iDevice section and sync. For distribution you will need to use MacOS on Mac or VM to install Application Loader and upload your app to the AppStore.</p>
+<p>&nbsp;</p>
+<p></p>

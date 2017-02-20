@@ -1,179 +1,156 @@
-<div class=\"recycle\">Article imported from <em>http://sierakowski.eu/list-of-tips/102-building-ios-app-with-adobe-air-things-learnt-when-developing-colorbyshape-app.html</em></div>
-\r\n
-<p><span style=\"text-align: justify;\">Generally I must say I was very happy with the performance of AIR 2.7 and AIR 3.0 on iPad first generation. My previous iOS app, JumpingRobot game, which was initially created with iPhone packager and then with AIR 2.6 was rendered in the GPU mode as in the CPU mode was just too slow. I was happy to found that AIR 2.7 has significantly improved operations on vector assets. But animations of big objects like in example moving the whole background from left to right like in my app when a user goes from one menu to another would be too slow with vectors. So all those big graphic objects are converted to bitmaps with BitmapData.draw method and I'm moving them without significant impact on animation performance. I also convert buttons and text labels to bitmaps what make vector animations much smoother.</span></p>
-\r\n
+<div class="recycle">Article imported from <em>http://sierakowski.eu/list-of-tips/102-building-ios-app-with-adobe-air-things-learnt-when-developing-colorbyshape-app.html</em></div>
+<p><span style="text-align: justify;">Generally I must say I was very happy with the performance of AIR 2.7 and AIR 3.0 on iPad first generation. My previous iOS app, JumpingRobot game, which was initially created with iPhone packager and then with AIR 2.6 was rendered in the GPU mode as in the CPU mode was just too slow. I was happy to found that AIR 2.7 has significantly improved operations on vector assets. But animations of big objects like in example moving the whole background from left to right like in my app when a user goes from one menu to another would be too slow with vectors. So all those big graphic objects are converted to bitmaps with BitmapData.draw method and I'm moving them without significant impact on animation performance. I also convert buttons and text labels to bitmaps what make vector animations much smoother.</span></p>
 <h3>1. Loading external swfs on iOS</h3>
-\r\n<p style=\"text-align: justify;\">As you probably already know you can't load external swfs when building AIR apps for iOS if they contain any ActionScript code or classes. This is fine, we can leave with this. Some people are using swc files instead of swfs and add them at compile time. But for my project it was easier to build it the way that I could actually have an xml file with paths to illustrations and load them dynamically. All illustrations were produced by a graphic designer who was told that he can only use instance names on movie clips but can't add any classes or code like stop() etc. The first batch of 10 illustrations was working perfectly, but when I got another 10, application started silently crashing on my iPad. The only way to track down what the problem could be was to try remote debugging and see the error on my IDE output panel. If you want to learn how to use remote debugging feature that allows you to get traces directly from your device over WiFi read \"tip 15\" in this article: <a href=\"index.php?option=com_content&amp;view=article&amp;id=86:building-mobile-games-in-adobe-air-optimization-techniques-used-in-jumping-droid-game&amp;catid=2&amp;Itemid=10\" target=\"_blank\">Building mobile games in Adobe AIR - optimization techniques used in Jumping Droid</a>. This way I found that the error was:</p>\r\n
-<div class=\"rj_insertcode\">
-  \r\n
-  <div class=\"rj_insertcode_actionscript3\">\r\n<div class=\"actionscript3\" style=\"border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;\">\r\n<pre style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\"><span style=\"vertical-align: top;\">Next loading image # <span style=\"color: #000000; font-weight: bold;\">30</span> which <span style=\"color: #0033ff; font-weight: bold;\">is</span><span style=\"color: #000000; font-weight: bold;\">:</span>  illustrations<span style=\"color: #000000; font-weight: bold;\">/</span>easy<span style=\"color: #000000; font-weight: bold;\">/</span>dino.swf</span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #000000;\">[</span>SWF<span style=\"color: #000000;\">]</span> illustrations<span style=\"color: #000000; font-weight: bold;\">/</span>easy<span style=\"color: #000000; font-weight: bold;\">/</span>dino.swf <span style=\"color: #000000; font-weight: bold;\">-</span> <span style=\"color: #000000; font-weight: bold;\">78074</span> bytes after decompression</span>\r\n<span style=\"vertical-align: top;\"><a href=\"http://www.google.com/search?q=verifyerror%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:verifyerror.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">VerifyError</span></a><span style=\"color: #000000; font-weight: bold;\">:</span> <a href=\"http://www.google.com/search?q=error%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:error.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">Error</span></a> #<span style=\"color: #000000; font-weight: bold;\">1107</span><span style=\"color: #000000; font-weight: bold;\">:</span> The ABC <span style=\"color: #004993;\">data</span> <span style=\"color: #0033ff; font-weight: bold;\">is</span> corrupt, attempt to read out of bounds.</span>\r\n<span style=\"vertical-align: top;\"><a href=\"http://www.google.com/search?q=referenceerror%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:referenceerror.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">ReferenceError</span></a><span style=\"color: #000000; font-weight: bold;\">:</span> <a href=\"http://www.google.com/search?q=error%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:error.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">Error</span></a> #<span style=\"color: #000000; font-weight: bold;\">1065</span><span style=\"color: #000000; font-weight: bold;\">:</span> Variable anim_5 <span style=\"color: #0033ff; font-weight: bold;\">is</span> not defined.</span>\r\n<span style=\"vertical-align: top;\"><a href=\"http://www.google.com/search?q=referenceerror%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:referenceerror.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">ReferenceError</span></a><span style=\"color: #000000; font-weight: bold;\">:</span> <a href=\"http://www.google.com/search?q=error%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:error.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">Error</span></a> #<span style=\"color: #000000; font-weight: bold;\">1065</span><span style=\"color: #000000; font-weight: bold;\">:</span> Variable MainTimeline <span style=\"color: #0033ff; font-weight: bold;\">is</span> not defined.</span></pre>\r\n</div>
-  \r\n
-</div>
-\r\n</div>\r\n
-<p>&nbsp;</p>
-\r\n<p style=\"text-align: justify;\">You usually get this error when there is some ActionScript code on the timeline, some class linked as a main class or some library item in Flash IDE has a class assigned (like export for ActionScript). But I carefully checked the whole project file and couldn't find any of these. And I don't remember creating any \"anim_5\" variable... So I started to remove items one by one to find which one was a cause of this problem. To my surprise it turned out that in fact there was no class or code but the only thing that was different to other illustrations in this file was a 3D tween animation. So it looks like under the hood Flash uses some scripting foe handling animations with 3d properties. Maybe it is ActionScript or JSFL, the fact is that it has to be interpreted in order to recreate 3d animation. Even converting these tweens into keyframes didn't help, I had to ask my designer to do not use any 3d properties in Flash.</p>\r\n
-<h3>2. Landscape mode upside down</h3>
-\r\n<p style=\"text-align: justify;\">Other thing that I wanted in my game was to be able to rotate an iPad upside down and make game correctly handle that, as on this video:</p>\r\n<p style=\"text-align: center;\">
-<object data=\"http://www.youtube.com/v/91y9V0a9Ek0?version=3\" type=\"application/x-shockwave-flash\" width=\"480\" height=\"270\">
-  <param name=\"src\" value=\"http://www.youtube.com/v/91y9V0a9Ek0?version=3\" />
-  <param name=\"wmode\" value=\"opaque\" />
-  \r\n
-</object>
-</p>\r\n<p style=\"text-align: justify;\">There is no simple option that you could actually tick to make that happen but there is a piece of code that does this job for you:</p>\r\n
-<div class=\"rj_insertcode\">
-  \r\n
-  <div class=\"rj_insertcode_actionscript3\">\r\n<div class=\"actionscript3\" style=\"border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;\">\r\n<pre style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\"><span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//add this to your init function or Event.ADDED_TO_STAGE handler:</span></span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #6699cc; font-weight: bold;\">var</span> startOrientation<span style=\"color: #000000; font-weight: bold;\">:</span><a href=\"http://www.google.com/search?q=string%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:string.html&amp;filter=0&amp;num=100&amp;btnI=lucky\"><span style=\"color: #004993;\">String</span></a> = <span style=\"color: #004993;\">stage</span>.<span style=\"color: #004993;\">orientation</span>;</span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//allow only landscape orientation</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #0033ff; font-weight: bold;\">if</span> <span style=\"color: #000000;\">(</span>startOrientation == StageOrientation.<span style=\"color: #004993;\">DEFAULT</span> <span style=\"color: #000000; font-weight: bold;\">||</span> </span>\r\n<span style=\"vertical-align: top;\">                startOrientation == StageOrientation.UPSIDE_DOWN<span style=\"color: #000000;\">)</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #000000;\">{</span></span>\r\n<span style=\"vertical-align: top;\">   <span style=\"color: #004993;\">stage</span>.setOrientation<span style=\"color: #000000;\">(</span>StageOrientation.ROTATED_RIGHT<span style=\"color: #000000;\">)</span>;</span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #000000;\">}</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #0033ff; font-weight: bold;\">else</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #000000;\">{</span></span>\r\n<span style=\"vertical-align: top;\">   <span style=\"color: #004993;\">stage</span>.setOrientation<span style=\"color: #000000;\">(</span>startOrientation<span style=\"color: #000000;\">)</span>;</span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #000000;\">}</span>                    </span>\r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//this may not work on Android devices, works well on iPad</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #004993;\">stage</span>.<span style=\"color: #004993;\">addEventListener</span><span style=\"color: #000000;\">(</span>StageOrientationEvent.ORIENTATION_CHANGING, </span>\r\n<span style=\"vertical-align: top;\">                                        orientationChangeListener<span style=\"color: #000000;\">)</span>;</span>\r\n \r\n \r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//then add this to your ORIENTATION_CHANGING listener to prevent </span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #009900;\">//default behavior and allow only landscape</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #339966; font-weight: bold;\">function</span> orientationChangeListener<span style=\"color: #000000;\">(</span>e<span style=\"color: #000000; font-weight: bold;\">:</span>StageOrientationEvent<span style=\"color: #000000;\">)</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #000000;\">{</span></span>\r\n<span style=\"vertical-align: top;\">   <span style=\"color: #0033ff; font-weight: bold;\">if</span> <span style=\"color: #000000;\">(</span>e.afterOrientation == StageOrientation.<span style=\"color: #004993;\">DEFAULT</span> <span style=\"color: #000000; font-weight: bold;\">||</span> </span>\r\n<span style=\"vertical-align: top;\">                 e.afterOrientation == StageOrientation.UPSIDE_DOWN<span style=\"color: #000000;\">)</span></span>\r\n<span style=\"vertical-align: top;\">   <span style=\"color: #000000;\">{</span></span>\r\n<span style=\"vertical-align: top;\">      e.<span style=\"color: #004993;\">preventDefault</span><span style=\"color: #000000;\">(</span><span style=\"color: #000000;\">)</span>;</span>\r\n<span style=\"vertical-align: top;\">   <span style=\"color: #000000;\">}</span></span>\r\n<span style=\"vertical-align: top;\"><span style=\"color: #000000;\">}</span></span></pre>\r\n</div>
-  \r\n
-</div>
-\r\n</div>\r\n
-<p>&nbsp;</p>
-\r\n
-<p>Your application descriptor xml file should have autoOrients be set to true.</p>
-\r\n
-<div class=\"rj_insertcode\">
-  \r\n
-  <div class=\"rj_insertcode_actionscript3\">\r\n<div class=\"actionscript3\" style=\"border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;\">\r\n<pre style=\"margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;\"><span style=\"vertical-align: top;\">  <span style=\"color: #000000; font-weight: bold;\">&lt;</span>initialWindow<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">    <span style=\"color: #000000; font-weight: bold;\">&lt;</span>content<span style=\"color: #000000; font-weight: bold;\">&gt;</span>colorByShape.swf<span style=\"color: #000000; font-weight: bold;\">&lt;/</span>content<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">    <span style=\"color: #000000; font-weight: bold;\">&lt;</span>systemChrome<span style=\"color: #000000; font-weight: bold;\">&gt;</span>standard<span style=\"color: #000000; font-weight: bold;\">&lt;/</span>systemChrome<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">    <span style=\"color: #000000; font-weight: bold;\">&lt;</span>transparent<span style=\"color: #000000; font-weight: bold;\">&gt;</span>false<span style=\"color: #000000; font-weight: bold;\">&lt;/</span>transparent<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">    <span style=\"color: #000000; font-weight: bold;\">&lt;</span>visible<span style=\"color: #000000; font-weight: bold;\">&gt;</span>true<span style=\"color: #000000; font-weight: bold;\">&lt;/</span>visible<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">    <span style=\"color: #000000; font-weight: bold;\">&lt;</span>fullScreen<span style=\"color: #000000; font-weight: bold;\">&gt;</span>true<span style=\"color: #000000; font-weight: bold;\">&lt;/</span>fullScreen<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">    <span style=\"color: #000000; font-weight: bold;\">&lt;</span>aspectRatio<span style=\"color: #000000; font-weight: bold;\">&gt;</span>landscape<span style=\"color: #000000; font-weight: bold;\">&lt;/</span>aspectRatio<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">    <span style=\"color: #000000; font-weight: bold;\">&lt;</span>renderMode<span style=\"color: #000000; font-weight: bold;\">&gt;</span>cpu<span style=\"color: #000000; font-weight: bold;\">&lt;/</span>renderMode<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">    <span style=\"color: #000000; font-weight: bold;\">&lt;</span>autoOrients<span style=\"color: #000000; font-weight: bold;\">&gt;</span>true<span style=\"color: #000000; font-weight: bold;\">&lt;/</span>autoOrients<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span>\r\n<span style=\"vertical-align: top;\">  <span style=\"color: #000000; font-weight: bold;\">&lt;/</span>initialWindow<span style=\"color: #000000; font-weight: bold;\">&gt;</span></span></pre>\r\n</div>
-  \r\n
-</div>
-\r\n</div>\r\n
-<p>&nbsp;</p>
-\r\n
-<p>Big props to Colin Holgate who advised this solution on Adobe Mobile Dev forums.</p>
-\r\n
-<p><span style=\"line-height: 26px;\">&nbsp;</span></p>
-\r\n
-<p>â€‹</p>
-\r\n
-<div id=\"jc\">
-  \r\n
-  <div id=\"comments\">
-    \r\n
-    <h4>Comments imported from the original article @sierakowski.eu</h4>
-    \r\n
-    <div id=\"comments-list\" class=\"comments-list\">
-      \r\n
-      <div id=\"comment-item-190\" class=\"even\">
-        \r\n
-        <div class=\"rbox\">
-          \r\n
-          <div class=\"rbox_tr\">
-            \r\n
-            <div class=\"rbox_tl\">
-              \r\n
-              <div class=\"rbox_t\">&nbsp;</div>
-              \r\n
-            </div>
-            \r\n
-          </div>
-          \r\n
-          <div class=\"rbox_m\">
-            \r\n
-            <div class=\"comment-box usertype-guest\">
-              <span class=\"comments-vote\"> <span id=\"comment-vote-holder-189\"> <a class=\"vote-good\" title=\"Good comment!\">+</a><a class=\"vote-poor\" title=\"Poor comment!\">-</a> <span class=\"vote-none\">0</span> </span> </span> <a class=\"comment-anchor\">#3</a> <span class=\"comment-author\">Alice</span> <span class=\"comment-date\">2013-11-18 01:05</span>\r\n
-              <div id=\"comment-body-194\" class=\"comment-body\">How did you reload your swfs? <br /><br />I'm making a game, and at the very end, I have a reload button that I want to be able to click to go back to the starting swf and it doesn't work.</div>
-              \r\n<span class=\"comments-buttons\"> <a>Quote</a> </span>
-            </div>
-            \r\n
-            <div class=\"clear\">&nbsp;</div>
-            \r\n
-          </div>
-          \r\n
-          <div class=\"rbox_br\">
-            \r\n
-            <div class=\"rbox_bl\">
-              \r\n
-              <div class=\"rbox_b\">&nbsp;</div>
-              \r\n
-            </div>
-            \r\n
-          </div>
-          \r\n
+<p style="text-align: justify;">As you probably already know you can't load external swfs when building AIR apps for iOS if they contain any ActionScript code or classes. This is fine, we can leave with this. Some people are using swc files instead of swfs and add them at compile time.
+    But for my project it was easier to build it the way that I could actually have an xml file with paths to illustrations and load them dynamically. All illustrations were produced by a graphic designer who was told that he can only use instance names
+    on movie clips but can't add any classes or code like stop() etc. The first batch of 10 illustrations was working perfectly, but when I got another 10, application started silently crashing on my iPad. The only way to track down what the problem could
+    be was to try remote debugging and see the error on my IDE output panel. If you want to learn how to use remote debugging feature that allows you to get traces directly from your device over WiFi read "tip 15" in this article: <a href="index.php?option=com_content&amp;view=article&amp;id=86:building-mobile-games-in-adobe-air-optimization-techniques-used-in-jumping-droid-game&amp;catid=2&amp;Itemid=10"
+        target="_blank">Building mobile games in Adobe AIR - optimization techniques used in Jumping Droid</a>. This way I found that the error was:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">Next loading image # <span style="color: #000000; font-weight: bold;">30</span> which <span style="color: #0033ff; font-weight: bold;">is</span><span style="color: #000000; font-weight: bold;">:</span>  illustrations<span style="color: #000000; font-weight: bold;">/</span>easy<span style="color: #000000; font-weight: bold;">/</span>dino.swf</span>
+<span style="vertical-align: top;"><span style="color: #000000;">[</span>SWF<span style="color: #000000;">]</span> illustrations<span style="color: #000000; font-weight: bold;">/</span>easy<span style="color: #000000; font-weight: bold;">/</span>dino.swf <span style="color: #000000; font-weight: bold;">-</span> <span style="color: #000000; font-weight: bold;">78074</span> bytes after decompression</span>
+<span style="vertical-align: top;"><a href="http://www.google.com/search?q=verifyerror%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:verifyerror.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">VerifyError</span></a><span style="color: #000000; font-weight: bold;">:</span> <a href="http://www.google.com/search?q=error%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:error.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Error</span></a> #<span style="color: #000000; font-weight: bold;">1107</span><span style="color: #000000; font-weight: bold;">:</span> The ABC <span style="color: #004993;">data</span> <span style="color: #0033ff; font-weight: bold;">is</span> corrupt, attempt to read out of bounds.</span>
+<span style="vertical-align: top;"><a href="http://www.google.com/search?q=referenceerror%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:referenceerror.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">ReferenceError</span></a><span style="color: #000000; font-weight: bold;">:</span> <a href="http://www.google.com/search?q=error%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:error.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Error</span></a> #<span style="color: #000000; font-weight: bold;">1065</span><span style="color: #000000; font-weight: bold;">:</span> Variable anim_5 <span style="color: #0033ff; font-weight: bold;">is</span> not defined.</span>
+<span style="vertical-align: top;"><a href="http://www.google.com/search?q=referenceerror%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:referenceerror.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">ReferenceError</span></a><span style="color: #000000; font-weight: bold;">:</span> <a href="http://www.google.com/search?q=error%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:error.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">Error</span></a> #<span style="color: #000000; font-weight: bold;">1065</span><span style="color: #000000; font-weight: bold;">:</span> Variable MainTimeline <span style="color: #0033ff; font-weight: bold;">is</span> not defined.</span></pre>
         </div>
-        \r\n
-      </div>
-      \r\n
-      <div id=\"comment-item-190\" class=\"even\">
-        \r\n
-        <div class=\"rbox\">
-          \r\n
-          <div class=\"rbox_tr\">
-            \r\n
-            <div class=\"rbox_tl\">
-              \r\n
-              <div class=\"rbox_t\">&nbsp;</div>
-              \r\n
-            </div>
-            \r\n
-          </div>
-          \r\n
-          <div class=\"rbox_m\">
-            \r\n
-            <div class=\"comment-box usertype-guest\">
-              <span class=\"comments-vote\"> <span id=\"comment-vote-holder-189\"> <a class=\"vote-good\" title=\"Good comment!\">+</a><a class=\"vote-poor\" title=\"Poor comment!\">-</a> <span class=\"vote-none\">0</span> </span> </span> <a class=\"comment-anchor\">#2</a> <span class=\"comment-author\">Whole Hat</span> <span class=\"comment-date\">2013-10-18 09:42</span>\r\n
-              <div id=\"comment-body-192\" class=\"comment-body\">http://stackoverflow.com/questions/19445791/compile-ipa-file-for-ios-with-adobe-flash<br /><br /> <img src=\"http://sierakowski.eu/components/com_jcomments/images/smiles/sad.gif\" alt=\":sad:\" border=\"0\" /></div>
-              \r\n<span class=\"comments-buttons\"> <a>Quote</a> </span>
-            </div>
-            \r\n
-            <div class=\"clear\">&nbsp;</div>
-            \r\n
-          </div>
-          \r\n
-          <div class=\"rbox_br\">
-            \r\n
-            <div class=\"rbox_bl\">
-              \r\n
-              <div class=\"rbox_b\">&nbsp;</div>
-              \r\n
-            </div>
-            \r\n
-          </div>
-          \r\n
-        </div>
-        \r\n
-      </div>
-      \r\n
-      <div id=\"comment-item-190\" class=\"even\">
-        \r\n
-        <div class=\"rbox\">
-          \r\n
-          <div class=\"rbox_tr\">
-            \r\n
-            <div class=\"rbox_tl\">
-              \r\n
-              <div class=\"rbox_t\">&nbsp;</div>
-              \r\n
-            </div>
-            \r\n
-          </div>
-          \r\n
-          <div class=\"rbox_m\">
-            \r\n
-            <div class=\"comment-box usertype-guest\">
-              <span class=\"comments-vote\"> <span id=\"comment-vote-holder-189\"> <a class=\"vote-good\" title=\"Good comment!\">+</a><a class=\"vote-poor\" title=\"Poor comment!\">-</a> <span class=\"vote-good\">+2</span> </span> </span> <a class=\"comment-anchor\">#1</a> <span class=\"comment-author\">Pat</span> <span class=\"comment-date\">2012-10-25 15:49</span>\r\n
-              <div id=\"comment-body-190\" class=\"comment-body\">Great app. my 4 years old love it. Thanks for sharing these useful tips.</div>
-              \r\n<span class=\"comments-buttons\"> <a>Quote</a> </span>
-            </div>
-            \r\n
-            <div class=\"clear\">&nbsp;</div>
-            \r\n
-          </div>
-          \r\n
-          <div class=\"rbox_br\">
-            \r\n
-            <div class=\"rbox_bl\">
-              \r\n
-              <div class=\"rbox_b\">&nbsp;</div>
-              \r\n
-            </div>
-            \r\n
-          </div>
-          \r\n
-        </div>
-        \r\n
-      </div>
-      \r\n
     </div>
-    \r\n
-  </div>
-  \r\n
+</div>
+<p>&nbsp;</p>
+<p style="text-align: justify;">You usually get this error when there is some ActionScript code on the timeline, some class linked as a main class or some library item in Flash IDE has a class assigned (like export for ActionScript). But I carefully checked the whole project file and
+    couldn't find any of these. And I don't remember creating any "anim_5" variable... So I started to remove items one by one to find which one was a cause of this problem. To my surprise it turned out that in fact there was no class or code but the
+    only thing that was different to other illustrations in this file was a 3D tween animation. So it looks like under the hood Flash uses some scripting foe handling animations with 3d properties. Maybe it is ActionScript or JSFL, the fact is that it
+    has to be interpreted in order to recreate 3d animation. Even converting these tweens into keyframes didn't help, I had to ask my designer to do not use any 3d properties in Flash.</p>
+<h3>2. Landscape mode upside down</h3>
+<p style="text-align: justify;">Other thing that I wanted in my game was to be able to rotate an iPad upside down and make game correctly handle that, as on this video:</p>
+<p style="text-align: center;"><object data="http://www.youtube.com/v/91y9V0a9Ek0?version=3" type="application/x-shockwave-flash" width="480" height="270"><param name="src" value="http://www.youtube.com/v/91y9V0a9Ek0?version=3" /><param name="wmode" value="opaque" />
+</object></p>
+<p style="text-align: justify;">There is no simple option that you could actually tick to make that happen but there is a piece of code that does this job for you:</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;"><span style="color: #009900;">//add this to your init function or Event.ADDED_TO_STAGE handler:</span></span>
+
+<span style="vertical-align: top;"><span style="color: #6699cc; font-weight: bold;">var</span> startOrientation<span style="color: #000000; font-weight: bold;">:</span><a href="http://www.google.com/search?q=string%20inurl:http://livedocs.adobe.com/flex/201/langref/%20inurl:string.html&amp;filter=0&amp;num=100&amp;btnI=lucky"><span style="color: #004993;">String</span></a> = <span style="color: #004993;">stage</span>.<span style="color: #004993;">orientation</span>;</span>
+<span style="vertical-align: top;"><span style="color: #009900;">//allow only landscape orientation</span></span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>startOrientation == StageOrientation.<span style="color: #004993;">DEFAULT</span> <span style="color: #000000; font-weight: bold;">||</span> </span>
+<span style="vertical-align: top;">                startOrientation == StageOrientation.UPSIDE_DOWN<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #004993;">stage</span>.setOrientation<span style="color: #000000;">(</span>StageOrientation.ROTATED_RIGHT<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;"><span style="color: #0033ff; font-weight: bold;">else</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #004993;">stage</span>.setOrientation<span style="color: #000000;">(</span>startOrientation<span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span>                    </span>
+
+<span style="vertical-align: top;"><span style="color: #009900;">//this may not work on Android devices, works well on iPad</span></span>
+<span style="vertical-align: top;"><span style="color: #004993;">stage</span>.<span style="color: #004993;">addEventListener</span><span style="color: #000000;">(</span>StageOrientationEvent.ORIENTATION_CHANGING, </span>
+<span style="vertical-align: top;">                                        orientationChangeListener<span style="color: #000000;">)</span>;</span>
+
+
+<span style="vertical-align: top;"><span style="color: #009900;">//then add this to your ORIENTATION_CHANGING listener to prevent </span></span>
+<span style="vertical-align: top;"><span style="color: #009900;">//default behavior and allow only landscape</span></span>
+<span style="vertical-align: top;"><span style="color: #339966; font-weight: bold;">function</span> orientationChangeListener<span style="color: #000000;">(</span>e<span style="color: #000000; font-weight: bold;">:</span>StageOrientationEvent<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">   <span style="color: #0033ff; font-weight: bold;">if</span> <span style="color: #000000;">(</span>e.afterOrientation == StageOrientation.<span style="color: #004993;">DEFAULT</span> <span style="color: #000000; font-weight: bold;">||</span> </span>
+<span style="vertical-align: top;">                 e.afterOrientation == StageOrientation.UPSIDE_DOWN<span style="color: #000000;">)</span></span>
+<span style="vertical-align: top;">   <span style="color: #000000;">{</span></span>
+<span style="vertical-align: top;">      e.<span style="color: #004993;">preventDefault</span><span style="color: #000000;">(</span><span style="color: #000000;">)</span>;</span>
+<span style="vertical-align: top;">   <span style="color: #000000;">}</span></span>
+<span style="vertical-align: top;"><span style="color: #000000;">}</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>Your application descriptor xml file should have autoOrients be set to true.</p>
+<div class="rj_insertcode">
+    <div class="rj_insertcode_actionscript3">
+        <div class="actionscript3" style="border-collapse: collapse; width: 100%; border: 1px solid #054b6e; background: #f8f8f8;">
+            <pre style="margin: 0; background: none; vertical-align: top; padding: 0px 4px; font-size: 12px;"><span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;</span>initialWindow<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>content<span style="color: #000000; font-weight: bold;">&gt;</span>colorByShape.swf<span style="color: #000000; font-weight: bold;">&lt;/</span>content<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>systemChrome<span style="color: #000000; font-weight: bold;">&gt;</span>standard<span style="color: #000000; font-weight: bold;">&lt;/</span>systemChrome<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>transparent<span style="color: #000000; font-weight: bold;">&gt;</span>false<span style="color: #000000; font-weight: bold;">&lt;/</span>transparent<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>visible<span style="color: #000000; font-weight: bold;">&gt;</span>true<span style="color: #000000; font-weight: bold;">&lt;/</span>visible<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>fullScreen<span style="color: #000000; font-weight: bold;">&gt;</span>true<span style="color: #000000; font-weight: bold;">&lt;/</span>fullScreen<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>aspectRatio<span style="color: #000000; font-weight: bold;">&gt;</span>landscape<span style="color: #000000; font-weight: bold;">&lt;/</span>aspectRatio<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>renderMode<span style="color: #000000; font-weight: bold;">&gt;</span>cpu<span style="color: #000000; font-weight: bold;">&lt;/</span>renderMode<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">    <span style="color: #000000; font-weight: bold;">&lt;</span>autoOrients<span style="color: #000000; font-weight: bold;">&gt;</span>true<span style="color: #000000; font-weight: bold;">&lt;/</span>autoOrients<span style="color: #000000; font-weight: bold;">&gt;</span></span>
+<span style="vertical-align: top;">  <span style="color: #000000; font-weight: bold;">&lt;/</span>initialWindow<span style="color: #000000; font-weight: bold;">&gt;</span></span></pre>
+        </div>
+    </div>
+</div>
+<p>&nbsp;</p>
+<p>Big props to Colin Holgate who advised this solution on Adobe Mobile Dev forums.</p>
+<p><span style="line-height: 26px;">&nbsp;</span></p>
+<p></p>
+<div id="jc">
+    <div id="comments">
+        <h4>Comments imported from the original article @sierakowski.eu</h4>
+        <div id="comments-list" class="comments-list">
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#3</a> <span class="comment-author">Alice</span> <span class="comment-date">2013-11-18 01:05</span>
+                            <div id="comment-body-194" class="comment-body">How did you reload your swfs? <br /><br />I'm making a game, and at the very end, I have a reload button that I want to be able to click to go back to the starting swf and it doesn't work.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-none">0</span> </span>
+                            </span> <a class="comment-anchor">#2</a> <span class="comment-author">Whole Hat</span> <span class="comment-date">2013-10-18 09:42</span>
+                            <div id="comment-body-192" class="comment-body">http://stackoverflow.com/questions/19445791/compile-ipa-file-for-ios-with-adobe-flash<br /><br /> <img src="http://sierakowski.eu/components/com_jcomments/images/smiles/sad.gif" alt=":sad:" border="0" /></div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-item-190" class="even">
+                <div class="rbox">
+                    <div class="rbox_tr">
+                        <div class="rbox_tl">
+                            <div class="rbox_t">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="rbox_m">
+                        <div class="comment-box usertype-guest"><span class="comments-vote"> <span id="comment-vote-holder-189"> <a class="vote-good" title="Good comment!">+</a><a class="vote-poor" title="Poor comment!">-</a> <span class="vote-good">+2</span> </span>
+                            </span> <a class="comment-anchor">#1</a> <span class="comment-author">Pat</span> <span class="comment-date">2012-10-25 15:49</span>
+                            <div id="comment-body-190" class="comment-body">Great app. my 4 years old love it. Thanks for sharing these useful tips.</div>
+                            <span class="comments-buttons"> <a>Quote</a> </span></div>
+                        <div class="clear">&nbsp;</div>
+                    </div>
+                    <div class="rbox_br">
+                        <div class="rbox_bl">
+                            <div class="rbox_b">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
