@@ -1,6 +1,6 @@
 module.exports = {
-  blogTitle: 'heyka',
-  URLS: {
+  BLOG_TITLE: 'heyka',
+  BLOG_PATHS: {
     blog: '/',
     categories: '/',
     tags: 'tags'

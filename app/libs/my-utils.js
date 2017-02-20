@@ -1,19 +1,20 @@
+const slug = require('slug');
 const inflect = require('i')();
 
 const generateURL = exports.generateURL = function generateURL () {
-  var urls = Array.prototype.slice.call(arguments);
-  //console.log('IN--->', urls);
+  var BLOG_PATHS = Array.prototype.slice.call(arguments);
+  //console.log('IN--->', BLOG_PATHS);
 
-  //urls = _.isString(urls) ? [urls] : urls;
-  urls = typeof urls === String ? [urls] : urls;
-  //urls = _.compact(urls);
-  urls = urls.filter(i => !!i);
+  //BLOG_PATHS = _.isString(BLOG_PATHS) ? [BLOG_PATHS] : BLOG_PATHS;
+  BLOG_PATHS = typeof BLOG_PATHS === String ? [BLOG_PATHS] : BLOG_PATHS;
+  //BLOG_PATHS = _.compact(BLOG_PATHS);
+  BLOG_PATHS = BLOG_PATHS.filter(i => !!i);
 
-  if (urls.length === 1 && urls[0] === '/') return urls[0];
+  if (BLOG_PATHS.length === 1 && BLOG_PATHS[0] === '/') return BLOG_PATHS[0];
 
 
   var ret = '';
-  urls.forEach(function(url) {
+  BLOG_PATHS.forEach(function(url) {
     if (url !== '/') ret += '/' + url;
   });
   //console.log('OUT--->', ret, '\n');
@@ -21,7 +22,7 @@ const generateURL = exports.generateURL = function generateURL () {
 };
 
 // borrowed from https://github.com/keystonejs/keystone-utils/blob/master/lib/index.js
-const plural = exports.plural = function plural (count, sn, pl) {
+const pluralify = exports.pluralify = function pluralify (count, sn, pl) {
   if (arguments.length === 1) {
     return inflect.pluralize(count);
   }
@@ -36,3 +37,17 @@ const plural = exports.plural = function plural (count, sn, pl) {
   }
   return (count === 1 ? sn : pl).replace('*', count);
 };
+
+const slugify = exports.slugify = function slugify (input) {
+  return slug(input, {lower: true});
+}
+
+const titlefy = exports.titlefy = function titlefy (input) {
+  return inflect.titleize(input);
+}
+
+const camelizefy = exports.camelizefy = function camelizefy (input) {
+  input = input.split(' ').join('_');
+  input = input.split('-').join('_');
+  return inflect.camelize(input);
+}

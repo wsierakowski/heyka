@@ -9,6 +9,7 @@ const index = require('./routes/index');
 const users = require('./routes/users');
 
 const myUtils = require('./libs/my-utils.js');
+const conf = require('./config');
 
 const db = require('./model').db;
 
@@ -47,16 +48,8 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-app.locals.title = "heyka.com blog";
-app.locals.curYear = new Date().getFullYear().toString();
-
 app.locals.myUtils = myUtils;
 
-app.locals.urls = {
-    blog: '/',
-    categories: 'categories',
-    //posts: myUtils.generateURL(app.locals.urls.categories, 'posts',
-    tags: 'tags'
-};
+app.locals.BLOG_PATHS = conf.BLOG_PATHS;
 
 module.exports = app;

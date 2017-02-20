@@ -29,7 +29,7 @@ block content
               strong #{data.posts.total}
               |  posts.
           else
-            h4.text-weight-normal Showing #{myUtils.plural(data.posts.results.length, '* post')}.
+            h4.text-weight-normal Showing #{myUtils.pluralify(data.posts.results.length, '* post')}.
           .blog
             each post in data.posts.results
               +renderArticle(true, post)

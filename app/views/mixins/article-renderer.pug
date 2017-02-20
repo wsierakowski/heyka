@@ -1,12 +1,12 @@
-//- isBlogArticle means that the article will be printed for blog,
-//- otherwise for single post display
-mixin renderArticle(isBlogArticle, post)
+//- showBriefOnly=true means that renderArticle is used to print briefs only for 
+//- the blog view, otherwise will print full post
+mixin renderArticle(showBriefOnly, post)
   article.post-article
     .post
       header
         //- TODO h2: a(href=blogurl + '/post/' + post.slug)= post.title
-        if isBlogArticle
-          h2: a(href=myUtils.generateURL(urls.blog, urls.posts, post.slug))= post.title
+        if showBriefOnly
+          h2: a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.slug))= post.title
         else
           h1= post.title
         .row
@@ -21,24 +21,19 @@ mixin renderArticle(isBlogArticle, post)
               span.glyphicon.glyphicon-cloud-download
               |  #{post.hits}
           .article-icons-group2.col-sm-6.col-md-6
-            if post.categories && post.categories.length
+            if post.category
               span.glyphicon.glyphicon-folder-open
               | &nbsp;&nbsp;
-              each cat, i in post.categories
-                //- TODO a(href=blogurl + '/categories/' + cat.key)= cat.name
-                a(href=myUtils.generateURL(urls.blog, urls.categories, cat.key))= cat.name
-                if i < post.categories.length - 1
-                  | ,
-                else
-                  |
+              a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.categories, post.category.id))= post.category.name
+              |
             if post.tags && post.tags.length
               span.glyphicon.glyphicon-bookmark
               | &nbsp;&nbsp;
               each tag, i in post.tags
                 //- TODO a(href=blogurl + '/tags/' + tag.key)= tag.name
-                a(href=myUtils.generateURL(urls.blog, urls.tags, tag.key))= tag.name
+                a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.tags, tag.key))= tag.name
                 if i < post.tags.length - 1
-                  | ,
+                  | ,&nbsp;
                 else
                   |
 
@@ -48,7 +43,7 @@ mixin renderArticle(isBlogArticle, post)
       //- then we can print first x number of words for the extended and then continue reading...
       .brief
         if post.image.exists
-          if isBlogArticle
+          if showBriefOnly
             img(src=post._.image.fit(160,160)).img.pull-right
           else
             .image-wrap: img(src=data.post._.image.fit(750,450)).img-responsive
@@ -56,10 +51,10 @@ mixin renderArticle(isBlogArticle, post)
       //- p.lead
       //-   | #{post.content.brief}
       if post.content.isExtended
-        if isBlogArticle
+        if showBriefOnly
           //- p.read-more: a(href=blogurl + '/post/' + post.slug) Read more...
           p.post.text-right
             //- TODO a.text-right(href=blogurl + '/post/' + post.slug) continue reading...
-            a.text-right(href=myUtils.generateURL(urls.blog, urls.posts, post.slug)) continue reading...
+            a.text-right(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.slug)) continue reading...
         else
           .post!= post.content.extended

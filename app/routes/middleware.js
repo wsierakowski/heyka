@@ -23,7 +23,7 @@ exports.initLocals = function(req, res, next) {
   var locals = res.locals;
 
   locals.curYear = new Date().getFullYear().toString();
-  locals.title = conf.blogTitle;
+  locals.title = conf.BLOG_TITLE;
 
   next();
 };
@@ -74,7 +74,7 @@ exports.fetchCategories = function(req, res, next) {
     if (err) return next(err);
     catList.rows.forEach((category) => {
       locals.data.categories.push({
-        id: category.doc._id,
+        id: category.doc.id,
         name: category.doc.name,
         articleCount: category.doc.articles.length
       });
@@ -93,7 +93,7 @@ exports.fetchTags = function(req, res, next) {
     if (err) return next(err);
     tagList.rows.forEach((tag) => {
       locals.data.tags.push({
-        id: tag.doc._id,
+        id: tag.doc.id,
         name: tag.doc.name,
         articleCount: tag.doc.articles.length
       });

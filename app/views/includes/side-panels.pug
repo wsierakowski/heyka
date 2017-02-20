@@ -12,7 +12,7 @@
     each post, i in data.latestPosts
       li.list-group-item
         //- TODO a(href=blogurl + '/post/' + post.slug) #{i+1}. #{post.title}
-        a(href=myUtils.generateURL(urls.blog, urls.posts, post.slug)) #{i+1}. #{post.title}
+        a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.slug)) #{i+1}. #{post.title}
 
 .panel.panel-default(style='margin-top: 20px;')
   .panel-heading
@@ -21,7 +21,7 @@
     each post, i in data.popularPosts
       li.list-group-item
         //- TODO a(href=blogurl + '/post/' + post.slug) #{i+1}. #{post.title}
-        a(href=myUtils.generateURL(urls.blog, urls.posts, post.slug)) #{i+1}. #{post.title} (#{post.hits})
+        a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.slug)) #{i+1}. #{post.title} (#{post.hits})
 
 if data.categories.length
   .panel.panel-default
@@ -29,10 +29,10 @@ if data.categories.length
       h4.panel-title Categories
     ul.list-group
       //-  TODO a(href=blogurl + '/', class=!data.category ? 'active' : false).list-group-item All
-      a(href=myUtils.generateURL(urls.blog, urls.categories), class=!data.category ? 'active' : false).list-group-item All
+      a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.categories), class=!data.category ? 'active' : false).list-group-item All
       each cat in data.categories
         //- TODO (href=blogurl + '/' + cat.key, class=data.category && data.category.id == cat.id ? 'active' : false).list-group-item= cat.name
-        a(href=myUtils.generateURL(urls.blog, urls.categories, cat.id), class=data.category && data.category.id == cat.id ? 'active' : false).list-group-item #{cat.name} (#{cat.articleCount})
+        a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.categories, cat.id), class=data.category && data.category.id == cat.id ? 'active' : false).list-group-item #{cat.name} (#{cat.articleCount})
 
 if data.tags.length
   .panel.panel-default
@@ -42,4 +42,4 @@ if data.tags.length
       ul.list-inline
         each tag in data.tags
           //-  TODO li: a(href=blogurl + '/tags/' + tag.key) #{tag.name} (#{tag.postCount})
-          li: a(href=myUtils.generateURL(urls.blog, urls.tags, tag.key)) #{tag.name} (#{tag.articleCount})
+          li: a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.tags, tag.id)) #{tag.name} (#{tag.articleCount})

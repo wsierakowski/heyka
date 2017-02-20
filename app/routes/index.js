@@ -26,8 +26,8 @@ router.get('/', function(req, res, next) {
 
 /* GET list of posts per category or tag */
 router.get([
-    myUtils.generateURL(conf.URLS.blog, conf.URLS.categories, ':category'),
-    myUtils.generateURL(conf.URLS.blog, conf.URLS.tags, ':tag'),
+    myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories, ':category'),
+    myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.tags, ':tag'),
   ],
   function(req, res, next) {
     if (req.params.category === 'favicon.ico') {

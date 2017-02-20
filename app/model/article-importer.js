@@ -6,7 +6,7 @@ const glob = require('glob');
 const path = require('path');
 const async = require('async');
 const YAML = require('yamljs');
-const slug = require('slug');
+const myUtils = require('../libs/my-utils');
 
 const validateArticleConf = require('./article-conf-validator');
 
@@ -125,7 +125,20 @@ function loadArticle(db) {
 
       // 5. Do all necessary processing on the conf before it is passed to db
       function processConf(conf, cb) {
-        conf._id = slug(conf.title);
+        conf._id = conf.slug = myUtils.slugify(conf.title);
+        conf.category = {
+          _id: myUtils.slugify(conf.category),
+          id: myUtils.slugify(conf.category),
+          name: myUtils.titlefy(conf.category)
+        }
+        conf.tags = conf.tags.map(tag => {
+          return {
+            _id: myUtils.slugify(tag),
+            id: myUtils.slugify(tag),
+            name: myUtils.camelizefy(tag)
+          };
+        });
+
         // to avoid "RangeError: Maximum call stack size exceeded."
         async.setImmediate(function() {
           cb(null, conf);
@@ -146,11 +159,12 @@ function loadArticle(db) {
             // Upsert category...
             // if category exists, append article to list of articles
             // otherwise create a new doc
-            db.categories.get(conf.category, (err, doc) => {
+            db.categories.get(conf.category._id, (err, doc) => {
               if (err) {
                 doc = {
-                  _id: conf.category,
-                  name: conf.category, // add util for capitalizing first letter with inflection module
+                  _id: conf.category._id,
+                  id: conf.category.id,
+                  name: conf.category.name,
                   articles: [conf._id]
                 };
               } else {
@@ -167,11 +181,12 @@ function loadArticle(db) {
             // Upsert tags...
             async.eachLimit(conf.tags, 1,
               function pushTagsIteratee(tag, tagCallback) {
-                db.tags.get(tag, (err, doc) => {
+                db.tags.get(tag._id, (err, doc) => {
                   if (err) {
                     doc = {
-                      _id: tag,
-                      name: tag,
+                      _id: tag._id,
+                      id: tag.id,
+                      name: tag.name,
                       articles: [conf._id]
                     };
                   } else {
