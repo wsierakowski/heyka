@@ -6,6 +6,7 @@ const glob = require('glob');
 const path = require('path');
 const async = require('async');
 const YAML = require('yamljs');
+const marked = require('marked');
 const myUtils = require('../libs/my-utils');
 
 const validateArticleConf = require('./article-conf-validator');
@@ -109,7 +110,10 @@ function loadArticle(db) {
 
       // 4. Read brief and extended content
       function readBriefAndExtended(conf, cb) {
-        let dirname = path.dirname(articleConfPath);
+        const dirname = path.dirname(articleConfPath);
+        console.log('grzyb');
+        const briefExt = path.extname(conf.content.brief).toLowerCase();
+        const extendedExt = path.extname(conf.content.extended).toLowerCase();
         async.map([
           path.join(dirname, conf.content.brief),
           path.join(dirname, conf.content.extended)
@@ -117,9 +121,26 @@ function loadArticle(db) {
         fs.readFile,
         (err, res) => {
           if (err) return cb({where: 'readBriefAndExtended', path: articleConfPath, error: err});
-          conf.content.briefBody = res[0].toString();
-          if (res[1].toString()) conf.content.isExtended = true;
-          conf.content.extendedBody = res[1].toString();
+
+          let briefBody = res[0].toString();
+          if (briefExt === '.' + EXTS.BRIEF.HTML) conf.content.briefBody = briefBody;
+          else if (briefExt === '.' + EXTS.BRIEF.MD) conf.content.briefBody = marked(briefBody);
+          else return cb({
+            where: 'readBriefAndExtended',
+            path: articleConfPath,
+            error: `Unsupported brief file type ${conf.content.brief}`}
+          );
+
+          let extendedBody = res[1].toString();
+          if (extendedBody) conf.content.isExtended = true;
+          if (extendedExt === '.' + EXTS.EXTENDED.HTML) conf.content.extendedBody = extendedBody;
+          else if (extendedExt === '.' + EXTS.EXTENDED.MD) conf.content.extendedBody = marked(extendedBody);
+          else return cb({
+            where: 'readBriefAndExtended',
+            path: articleConfPath,
+            error: `Unsupported extended file type ${conf.content.extended}`}
+          );
+
           cb(null, conf);
         });
       },
