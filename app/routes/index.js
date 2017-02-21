@@ -1,6 +1,7 @@
 const express = require('express');
 const async = require('async');
 const moment = require('moment');
+const cheerio = require('cheerio');
 
 const model = require('../model');
 const middleware = require('./middleware');
@@ -56,7 +57,18 @@ router.get(
       articleDoc.publishedDate = moment(articleDoc.publishedDate);
       articleDoc.image = {exists: false};
       locals.data.post = articleDoc;
-      res.render('article');
+      res.render('article', (rerr, html) => {
+        if (rerr) return next(rerr);
+        // TODO make it a module
+        if (articleDoc.content.extendedType === "md") {
+          const $ = cheerio.load(html);
+          if (!$('table').attr('class')) {
+            $('table').addClass('table table-condensed');
+          }
+          return res.send($.html());
+        }
+        return res.send(html);
+      });
     });
   }
 );
