@@ -1,0 +1,15 @@
+{
+  "author": {
+    "name": "sigman"
+  },
+  "category": "primers",
+  "content": {
+    "brief": "brief.html",
+    "extended": "extended.md",
+    "extendedType": "md"
+  },
+  "publishedDate": "2012-03-14T00:00:00.000+0000",
+  "state": "published",
+  "tags": ["java-script", "reg-ex", "linux"],
+  "title": "Regex basics"
+}
