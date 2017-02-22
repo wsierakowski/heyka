@@ -122,7 +122,14 @@ router.get([
           })
         }, err => {
           if (err) return next(err);
-          console.log(`got all articles for category ${req.params.category}.`)
+          console.log(`got all articles for category ${req.params.category}.`);
+          locals.data.posts.results.sort((a, b) => {
+            if (a.publishedDate < b.publishedDate)
+              return 1;
+            if (a.publishedDate > b.publishedDate)
+              return -1;
+            return 0;
+          });
           res.render('blog');
         });
     });
