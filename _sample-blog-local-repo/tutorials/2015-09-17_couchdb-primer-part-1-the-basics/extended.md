@@ -16,7 +16,7 @@ NoSQL (Not Only SQL) provides an alternative model for storing and retrieving do
 ---
 ### 1.2 Key/Value stores vs Document database
 
-**Key/Value** is the simplest type of NoSQL databagses where data is stored as hash table / associative array. The key uniquely identifies each record, the values can be strings, numbers or more complex structures.
+**Key/Value** is the simplest type of NoSQL databases where data is stored as hash table / associative array. The key uniquely identifies each record, the values can be strings, numbers or more complex structures.
 
 Popular examples: Redis, Memcache, DynamoDB
 
@@ -370,7 +370,7 @@ The new revision number is returned every time we create or update a document bo
 }
 ```
 
-Every time we want to update or delete a document, we need to provide its revision number to let the database check if we are trying update the latest version of the document. If there is a mismatch, it would mean that there has been an update to the document on the server side and the client isn't aware of that (hasn't synced yet), hence provides the revision number representing an older document version. In this case the client application needs to sync in order to be up to date with the changes on the server and let the user is decided what action should be taken if there is a conflict. Options could include overwrite client version with the version from the server, or opposite, or let the user merge both. After this action is taken, the client app may again attempt to update. If the client document's revision number matches the one on the database side, the document gets updated on the server side and receives a new revision number that is returned again to the client. If replication is set with other clients, they will be synced with the latest revision "eventually" as well.
+Every time we want to update or delete a document, we need to provide its revision number to let the database check if we are trying update the latest version of the document. If there is a mismatch, it would mean that there has been an update to the document on the server side and the client isn't aware of that (hasn't synced yet), hence provides the revision number representing an older document version. In this case the client application needs to sync in order to be up to date with the changes on the server and let the user decide what action should be taken if there is a conflict. Options could include overwrite client version with the version from the server, or opposite, or let the user merge both. After this action is taken, the client app may again attempt to update. If the client document's revision number matches the one on the database side, the document gets updated on the server side and receives a new revision number that is returned again to the client. If replication is set with other clients, they will be synced with the latest revision "eventually" as well.
 
 Let's update a document by adding a new comment to it. Since article and comments are part of the same document, adding a new comment to an article requires sending the whole article document again. If we send a PUT request and won't provide any revision number in the body of the request, database is going to return a conflict error (the same as if we provided an incorrect or stale number):
 
