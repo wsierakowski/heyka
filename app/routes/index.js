@@ -103,36 +103,66 @@ router.get([
     locals.data.posts.results = [];
     locals.data.posts.totalPages = 1;
 
-    model.db.categories.get(req.params.category, (catErr, catDoc) => {
-      if (catErr) return next(catErr);
-      //console.log('category doc-->', catDoc);
-      locals.data.category = catDoc;
-      async.eachSeries(
-        catDoc.articles,
-        (article, cb) => {
-          model.db.articles.get(article, (articleErr, articleDoc) => {
-            if (articleErr) return cb(articleErr);
-            // TODO create utility to post-process articles before sending them to render
-            articleDoc.publishedDate = moment(articleDoc.publishedDate);
-            // TODO add article intro image support
-            articleDoc.image = {exists: false};
-            locals.data.posts.results.push(articleDoc);
-            console.log('->', articleDoc._id);
-            cb(null);
-          })
-        }, err => {
-          if (err) return next(err);
-          console.log(`got all articles for category ${req.params.category}.`);
-          locals.data.posts.results.sort((a, b) => {
-            if (a.publishedDate < b.publishedDate)
-              return 1;
-            if (a.publishedDate > b.publishedDate)
-              return -1;
-            return 0;
-          });
-          res.render('blog');
-        });
+    model.db.articles.query('articles/byCategoryPublishedDate', {
+      endkey: [req.params.category],
+      startkey: [req.params.category, {}],
+      //skip: 1,
+      //limit: 3,
+      //key: req.params.category,
+      descending: true,
+      include_docs: true
+    }, (err, resArticles) => {
+      if (err) return next(err);
+      let articles = [];
+      resArticles.rows.forEach(item => {
+        item.doc.publishedDate = moment(item.doc.publishedDate);
+        item.doc.image = {exists: false};
+        articles.push(item.doc);
+        console.log('->', item.doc._id);
+      });
+      console.log(`got all articles for category ${req.params.category}.`);
+      locals.data.posts.results = articles;
+
+      model.db.categories.get(req.params.category, (catErr, catDoc) => {
+        if (catErr) return next(catErr);
+        //console.log('category doc-->', catDoc);
+        locals.data.category = catDoc;
+        res.render('blog');
+      });
     });
+
+    // if (0) {
+    //   model.db.categories.get(req.params.category, (catErr, catDoc) => {
+    //     if (catErr) return next(catErr);
+    //     //console.log('category doc-->', catDoc);
+    //     locals.data.category = catDoc;
+    //     async.eachSeries(
+    //       catDoc.articles,
+    //       (article, cb) => {
+    //         model.db.articles.get(article, (articleErr, articleDoc) => {
+    //           if (articleErr) return cb(articleErr);
+    //           // TODO create utility to post-process articles before sending them to render
+    //           articleDoc.publishedDate = moment(articleDoc.publishedDate);
+    //           // TODO add article intro image support
+    //           articleDoc.image = {exists: false};
+    //           locals.data.posts.results.push(articleDoc);
+    //           console.log('->', articleDoc._id);
+    //           cb(null);
+    //         })
+    //       }, err => {
+    //         if (err) return next(err);
+    //         console.log(`got all articles for category ${req.params.category}.`);
+    //         locals.data.posts.results.sort((a, b) => {
+    //           if (a.publishedDate < b.publishedDate)
+    //             return 1;
+    //           if (a.publishedDate > b.publishedDate)
+    //             return -1;
+    //           return 0;
+    //         });
+    //         res.render('blog');
+    //       });
+    //   });
+    // }
 });
 
 // router.get('/:post', function(req, res, next) {

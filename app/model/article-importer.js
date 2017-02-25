@@ -148,6 +148,8 @@ function loadArticle(db) {
       // 5. Do all necessary processing on the conf before it is passed to db
       function processConf(conf, cb) {
         conf._id = conf.id = conf.slug = myUtils.slugify(conf.title);
+        // TODO rething whether we still need to keep almost entire category doc in article
+        // after we changed the way how we query articles by category...
         conf.category = {
           _id: myUtils.slugify(conf.category),
           id: myUtils.slugify(conf.category),
