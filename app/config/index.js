@@ -2,7 +2,7 @@ module.exports = {
   BLOG_TITLE: 'heyka',
   BLOG_PATHS: {
     blog: '/',
-    categories: '/',
+    categories: '',
     tags: 'tags'
   }
 }

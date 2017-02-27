@@ -17,66 +17,22 @@ app.get('/users/:userId/books/:bookId', function (req, res) {
 */
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
-  let locals = res.locals;
-  locals.section = 'blog-home';
-  locals.data = locals.data || {};
-  locals.data.posts = [];
-  res.render('index', { title: 'Express' });
-});
+// router.get('/', function(req, res, next) {
+//   let locals = res.locals;
+//   locals.section = 'blog-home';
+//   locals.data = locals.data || {};
+//   locals.data.posts = [];
+//   res.render('index', { title: 'Express' });
+// });
 
 // TODO articles should be placed in categories from URL point of view,
 // like if a category was a directory of articles
-
-/* GET article */
-router.get(
-  myUtils.generateURL(conf.BLOG_PATHS.blog, ':category', ':post'),
-  function(req, res, next) {
-    if (req.params.category === 'favicon.ico') {
-      return res.send(404);
-    }
-    next();
-  },
-  middleware.initLocals,
-  middleware.fetchCategories,
-  middleware.fetchTags,
-  middleware.fetchLatestPosts,
-  middleware.fetchPopularPosts,
-  function renderSelectedArticle(req, res, next) {
-    let locals = res.locals;
-    locals.section = 'article';
-    locals.filters = {
-      post: req.params.post
-    };
-    locals.data = locals.data || {};
-    locals.data.posts = [];
-
-    model.db.articles.get(req.params.post, (err, articleDoc) => {
-      if (err) return next(err);
-      // TODO create utility to post-process articles before sending them to render
-      articleDoc.publishedDate = moment(articleDoc.publishedDate);
-      articleDoc.image = {exists: false};
-      locals.data.post = articleDoc;
-      res.render('article', (rerr, html) => {
-        if (rerr) return next(rerr);
-        // TODO make it a module
-        if (articleDoc.content.extendedType === "md") {
-          const $ = cheerio.load(html);
-          if (!$('table').attr('class')) {
-            $('table').addClass('table table-condensed');
-          }
-          return res.send($.html());
-        }
-        return res.send(html);
-      });
-    });
-  }
-);
 
 /* GET list of posts per category or tag */
 router.get([
     myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories, ':category'),
     myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.tags, ':tag'),
+    myUtils.generateURL(conf.BLOG_PATHS.blog)
   ],
   function(req, res, next) {
     if (req.params.category === 'favicon.ico') {
@@ -103,15 +59,21 @@ router.get([
     locals.data.posts.results = [];
     locals.data.posts.totalPages = 1;
 
-    model.db.articles.query('articles/byCategoryPublishedDate', {
-      endkey: [req.params.category],
-      startkey: [req.params.category, {}],
+    let queryOptions = {
       //skip: 1,
       //limit: 3,
       //key: req.params.category,
       descending: true,
       include_docs: true
-    }, (err, resArticles) => {
+    };
+
+    if (req.params.category) {
+      queryOptions.endkey = [req.params.category];
+      queryOptions.tartkey = [req.params.category, {}];
+    }
+
+    model.db.articles.query('articles/byCategoryPublishedDate',
+      queryOptions, (err, resArticles) => {
       if (err) return next(err);
       let articles = [];
       resArticles.rows.forEach(item => {
@@ -123,12 +85,17 @@ router.get([
       console.log(`got all articles for category ${req.params.category}.`);
       locals.data.posts.results = articles;
 
-      model.db.categories.get(req.params.category, (catErr, catDoc) => {
-        if (catErr) return next(catErr);
-        //console.log('category doc-->', catDoc);
-        locals.data.category = catDoc;
+      if (req.params.category) {
+        model.db.categories.get(req.params.category, (catErr, catDoc) => {
+          if (catErr) return next(catErr);
+          //console.log('category doc-->', catDoc);
+          locals.data.category = catDoc;
+          res.render('blog');
+        });
+      } else {
+        //locals.data.category = {name: 'Latest'};
         res.render('blog');
-      });
+      }
     });
 
     // if (0) {
@@ -206,5 +173,50 @@ router.get([
 //   res.locals.grzyb = req.params.category;
 //   res.render('index', { title: 'Express' });
 // });
+
+/* GET article */
+router.get(
+  myUtils.generateURL(conf.BLOG_PATHS.blog, ':category', ':post'),
+  function(req, res, next) {
+    if (req.params.category === 'favicon.ico') {
+      return res.send(404);
+    }
+    next();
+  },
+  middleware.initLocals,
+  middleware.fetchCategories,
+  middleware.fetchTags,
+  middleware.fetchLatestPosts,
+  middleware.fetchPopularPosts,
+  function renderSelectedArticle(req, res, next) {
+    let locals = res.locals;
+    locals.section = 'article';
+    locals.filters = {
+      post: req.params.post
+    };
+    locals.data = locals.data || {};
+    locals.data.posts = [];
+
+    model.db.articles.get(req.params.post, (err, articleDoc) => {
+      if (err) return next(err);
+      // TODO create utility to post-process articles before sending them to render
+      articleDoc.publishedDate = moment(articleDoc.publishedDate);
+      articleDoc.image = {exists: false};
+      locals.data.post = articleDoc;
+      res.render('article', (rerr, html) => {
+        if (rerr) return next(rerr);
+        // TODO make it a module
+        if (articleDoc.content.extendedType === "md") {
+          const $ = cheerio.load(html);
+          if (!$('table').attr('class')) {
+            $('table').addClass('table table-condensed');
+          }
+          return res.send($.html());
+        }
+        return res.send(html);
+      });
+    });
+  }
+);
 
 module.exports = router;

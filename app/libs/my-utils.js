@@ -2,19 +2,19 @@ const slug = require('slug');
 const inflect = require('i')();
 
 const generateURL = exports.generateURL = function generateURL () {
-  var BLOG_PATHS = Array.prototype.slice.call(arguments);
-  //console.log('IN--->', BLOG_PATHS);
+  var pathPieces = Array.prototype.slice.call(arguments);
+  //console.log('IN--->', pathPieces);
 
-  //BLOG_PATHS = _.isString(BLOG_PATHS) ? [BLOG_PATHS] : BLOG_PATHS;
-  BLOG_PATHS = typeof BLOG_PATHS === String ? [BLOG_PATHS] : BLOG_PATHS;
-  //BLOG_PATHS = _.compact(BLOG_PATHS);
-  BLOG_PATHS = BLOG_PATHS.filter(i => !!i);
+  //pathPieces = _.isString(pathPieces) ? [pathPieces] : pathPieces;
+  pathPieces = typeof pathPieces === String ? [pathPieces] : pathPieces;
+  //pathPieces = _.compact(pathPieces);
+  pathPieces = pathPieces.filter(i => !!i);
 
-  if (BLOG_PATHS.length === 1 && BLOG_PATHS[0] === '/') return BLOG_PATHS[0];
+  if (pathPieces.length === 1 && pathPieces[0] === '/') return pathPieces[0];
 
 
   var ret = '';
-  BLOG_PATHS.forEach(function(url) {
+  pathPieces.forEach(function(url) {
     if (url !== '/') ret += '/' + url;
   });
   //console.log('OUT--->', ret, '\n');
