@@ -8,10 +8,19 @@ function createViews(cb) {
   const designDoc = {
     _id: '_design/articles',
     views: {
-      byCategoryPublishedDate: {
+      byCategory: {
         map: (function mapFun(doc) {
           emit([doc.category._id, doc.publishedDate]);
           //emit(doc.category, null)
+        }).toString()
+      },
+      byTag: {
+        map: (function mapFun(doc) {
+          if (doc.tags.length > 0) {
+            for (var i in doc.tags) {
+              emit([doc.tags[i]._id, doc.publishedDate]);
+            }
+          }
         }).toString()
       }
     }

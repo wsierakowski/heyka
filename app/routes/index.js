@@ -1,3 +1,5 @@
+// TODO: deep refactor - move couchdb specific stuff to an abstraction layer
+
 const express = require('express');
 const async = require('async');
 const moment = require('moment');
@@ -67,12 +69,18 @@ router.get([
       include_docs: true
     };
 
-    if (req.params.category) {
-      queryOptions.endkey = [req.params.category];
-      queryOptions.tartkey = [req.params.category, {}];
+    let searchKey = req.params.category || req.params.tag
+    if (searchKey) {
+      queryOptions.endkey = [searchKey];
+      queryOptions.startkey = [searchKey, {}];
     }
 
-    model.db.articles.query('articles/byCategoryPublishedDate',
+    let viewType;
+    if (req.params.tag) viewType = 'articles/byTag';
+    // else if there is a category or category is undefined (meaning all latest articles)
+    else viewType = 'articles/byCategory';
+
+    model.db.articles.query(viewType,
       queryOptions, (err, resArticles) => {
       if (err) return next(err);
       let articles = [];
@@ -82,7 +90,10 @@ router.get([
         articles.push(item.doc);
         console.log('->', item.doc._id);
       });
-      console.log(`got all articles for category ${req.params.category}.`);
+
+      if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
+      else if (req.params.tag) console.log(`got all articles for tag ${req.params.tag}.`);
+
       locals.data.posts.results = articles;
 
       if (req.params.category) {
@@ -92,7 +103,15 @@ router.get([
           locals.data.category = catDoc;
           res.render('blog');
         });
+      } else if (req.params.tag) {
+        model.db.tags.get(req.params.tag, (tagErr, tagDoc) => {
+          if (tagErr) return next(tagErr);
+          //console.log('tag doc-->', tagDoc);
+          locals.data.tag = tagDoc;
+          res.render('blog');
+        });
       } else {
+        console.log('----------------------- WHY AM I HERE?? -----------------------');
         //locals.data.category = {name: 'Latest'};
         res.render('blog');
       }

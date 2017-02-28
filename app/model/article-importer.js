@@ -111,7 +111,6 @@ function loadArticle(db) {
       // 4. Read brief and extended content
       function readBriefAndExtended(conf, cb) {
         const dirname = path.dirname(articleConfPath);
-        console.log('grzyb');
         const briefExt = path.extname(conf.content.brief).toLowerCase();
         const extendedExt = path.extname(conf.content.extended).toLowerCase();
         async.map([
