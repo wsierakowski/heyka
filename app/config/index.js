@@ -4,5 +4,6 @@ module.exports = {
     blog: '/',
     categories: '',
     tags: 'tags'
-  }
+  },
+  ARTICLES_PER_PAGE: 3
 }

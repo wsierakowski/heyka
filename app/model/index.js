@@ -4,6 +4,8 @@ const BlogDB = require('./db');
 let articleImporter;
 const blogDB = new BlogDB();
 
+// TODO: return articles with state published only
+// or actually don't even load artiecles that aren't state published into db?
 function createViews(cb) {
   const designDoc = {
     _id: '_design/articles',

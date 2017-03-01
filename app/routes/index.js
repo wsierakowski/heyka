@@ -61,9 +61,13 @@ router.get([
     locals.data.posts.results = [];
     locals.data.posts.totalPages = 1;
 
+    let curPage = req.query.page || 1;
+
+    let skip = (curPage - 1) * conf.ARTICLES_PER_PAGE;
+
     let queryOptions = {
-      //skip: 1,
-      //limit: 3,
+      skip: skip,
+      limit: conf.ARTICLES_PER_PAGE,
       //key: req.params.category,
       descending: true,
       include_docs: true
@@ -94,7 +98,16 @@ router.get([
       if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
       else if (req.params.tag) console.log(`got all articles for tag ${req.params.tag}.`);
 
+      // TODO: rename posts to articles
       locals.data.posts.results = articles;
+
+      locals.data.posts.first = (curPage - 1) * conf.ARTICLES_PER_PAGE + 1;
+      locals.data.posts.last = locals.data.posts.first + conf.ARTICLES_PER_PAGE;
+      locals.data.posts.total = resArticles.total_rows;
+      locals.data.posts.totalPages = Math.ceil(resArticles.total_rows/conf.ARTICLES_PER_PAGE);
+      locals.data.posts.previous = 2017;
+      locals.data.posts.next = 2017;
+      locals.data.posts.pages = [2015, 2016, 2017];
 
       if (req.params.category) {
         model.db.categories.get(req.params.category, (catErr, catDoc) => {
@@ -111,7 +124,7 @@ router.get([
           res.render('blog');
         });
       } else {
-        console.log('----------------------- WHY AM I HERE?? -----------------------');
+        // This if display all articles view
         //locals.data.category = {name: 'Latest'};
         res.render('blog');
       }
