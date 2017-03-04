@@ -5,5 +5,5 @@ module.exports = {
     categories: '',
     tags: 'tags'
   },
-  ARTICLES_PER_PAGE: 3
+  ARTICLES_PER_PAGE: 4
 }

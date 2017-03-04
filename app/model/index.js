@@ -5,7 +5,7 @@ let articleImporter;
 const blogDB = new BlogDB();
 
 // TODO: return articles with state published only
-// or actually don't even load artiecles that aren't state published into db?
+// or actually don't even load articles that aren't state published into db?
 function createViews(cb) {
   const designDoc = {
     _id: '_design/articles',
@@ -14,7 +14,9 @@ function createViews(cb) {
         map: (function mapFun(doc) {
           emit([doc.category._id, doc.publishedDate]);
           //emit(doc.category, null)
-        }).toString()
+        }).toString(),
+        //http://stackoverflow.com/questions/33902858/couchdb-returns-wrong-total-rows
+        reduce: '_count'
       },
       byTag: {
         map: (function mapFun(doc) {

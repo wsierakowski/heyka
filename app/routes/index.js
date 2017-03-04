@@ -70,64 +70,85 @@ router.get([
       limit: conf.ARTICLES_PER_PAGE,
       //key: req.params.category,
       descending: true,
-      include_docs: true
+      include_docs: true,
+      reduce: false
     };
+    let reduceQueryOptions = {}
 
     let searchKey = req.params.category || req.params.tag
     if (searchKey) {
-      queryOptions.endkey = [searchKey];
-      queryOptions.startkey = [searchKey, {}];
+      queryOptions.endkey = reduceQueryOptions.startkey = [searchKey];
+      queryOptions.startkey = reduceQueryOptions.endkey = [searchKey, {}];
     }
 
     let viewType;
     if (req.params.tag) viewType = 'articles/byTag';
     // else if there is a category or category is undefined (meaning all latest articles)
     else viewType = 'articles/byCategory';
+debugger
+    model.db.articles.query(viewType, reduceQueryOptions, (reduceErr, resArticleCount) => {
+      if (reduceErr) return next(reduceErr);
+      let articleCount = resArticleCount.rows[0].value;
 
-    model.db.articles.query(viewType,
-      queryOptions, (err, resArticles) => {
-      if (err) return next(err);
-      let articles = [];
-      resArticles.rows.forEach(item => {
-        item.doc.publishedDate = moment(item.doc.publishedDate);
-        item.doc.image = {exists: false};
-        articles.push(item.doc);
-        console.log('->', item.doc._id);
+      model.db.articles.query(viewType, queryOptions, (articlesErr, resArticles) => {
+        if (articlesErr) return next(articlesErr);
+        let articles = [];
+        resArticles.rows.forEach(item => {
+          item.doc.publishedDate = moment(item.doc.publishedDate);
+          item.doc.image = {exists: false};
+          articles.push(item.doc);
+          console.log('->', item.doc._id);
+        });
+
+        if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
+        else if (req.params.tag) console.log(`got all articles for tag ${req.params.tag}.`);
+
+        // TODO: rename posts to articles
+        locals.data.posts.results = articles;
+
+        let pagination = {};
+        pagination.totalArticles = articleCount;//resArticles.total_rows;
+        pagination.totalPages = Math.ceil(pagination.totalArticles/conf.ARTICLES_PER_PAGE);
+        pagination.currentPage = parseInt(curPage);
+        pagination.previousPage = pagination.currentPage > 1 ? pagination.currentPage - 1 : null;
+        pagination.nextPage = pagination.currentPage < pagination.totalPages ? pagination.currentPage + 1 : null;
+        pagination.pagesList = Array.from(new Array(pagination.totalPages), (v,i) => i + 1);
+
+        pagination.firstArticleIdxInCurPage = (pagination.currentPage - 1) * conf.ARTICLES_PER_PAGE + 1;
+        pagination.lastArticleIdxInCurPage = pagination.firstArticleIdxInCurPage + conf.ARTICLES_PER_PAGE - 1;
+
+        console.log('===> pagination', pagination);
+
+        locals.data.posts.first = pagination.firstArticleIdxInCurPage;
+        locals.data.posts.last = pagination.lastArticleIdxInCurPage;
+        locals.data.posts.total = pagination.totalArticles;
+        locals.data.posts.totalPages = pagination.totalPages;
+        locals.data.posts.currentPage = pagination.currentPage;
+        locals.data.posts.previous = pagination.previousPage;
+        locals.data.posts.next = pagination.nextPage;
+        locals.data.posts.pages = pagination.pagesList;
+
+        if (req.params.category) {
+          model.db.categories.get(req.params.category, (catErr, catDoc) => {
+            if (catErr) return next(catErr);
+            //console.log('category doc-->', catDoc);
+            locals.data.category = catDoc;
+            res.render('blog');
+          });
+        } else if (req.params.tag) {
+          model.db.tags.get(req.params.tag, (tagErr, tagDoc) => {
+            if (tagErr) return next(tagErr);
+            //console.log('tag doc-->', tagDoc);
+            locals.data.tag = tagDoc;
+            res.render('blog');
+          });
+        } else {
+          // This if display all articles view
+          //locals.data.category = {name: 'Latest'};
+          res.render('blog');
+        }
       });
 
-      if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
-      else if (req.params.tag) console.log(`got all articles for tag ${req.params.tag}.`);
-
-      // TODO: rename posts to articles
-      locals.data.posts.results = articles;
-
-      locals.data.posts.first = (curPage - 1) * conf.ARTICLES_PER_PAGE + 1;
-      locals.data.posts.last = locals.data.posts.first + conf.ARTICLES_PER_PAGE;
-      locals.data.posts.total = resArticles.total_rows;
-      locals.data.posts.totalPages = Math.ceil(resArticles.total_rows/conf.ARTICLES_PER_PAGE);
-      locals.data.posts.previous = 2017;
-      locals.data.posts.next = 2017;
-      locals.data.posts.pages = [2015, 2016, 2017];
-
-      if (req.params.category) {
-        model.db.categories.get(req.params.category, (catErr, catDoc) => {
-          if (catErr) return next(catErr);
-          //console.log('category doc-->', catDoc);
-          locals.data.category = catDoc;
-          res.render('blog');
-        });
-      } else if (req.params.tag) {
-        model.db.tags.get(req.params.tag, (tagErr, tagDoc) => {
-          if (tagErr) return next(tagErr);
-          //console.log('tag doc-->', tagDoc);
-          locals.data.tag = tagDoc;
-          res.render('blog');
-        });
-      } else {
-        // This if display all articles view
-        //locals.data.category = {name: 'Latest'};
-        res.render('blog');
-      }
     });
 
     // if (0) {
