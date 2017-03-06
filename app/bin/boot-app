@@ -5,26 +5,23 @@
  */
 
 const webApp = require('../web-app');
-const debug = require('debug')('mywebApp2:server');
+const debug = require('debug')('myheykaApp2:server');
 const http = require('http');
 const path = require('path');
 const async = require('async');
 const model = require('../model');
 const myUtils = require('../libs/my-utils');
 const conf = require('../config');
+var heykaApp, server;
 
 /**
  * Get port from environment and store in Express.
  */
 
 const port = normalizePort(process.env.PORT || '3000');
-webApp.set('port', port);
 
-/**
- * Create HTTP server.
- */
-
-const server = http.createServer(webApp);
+// TODO Fix UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: 1)
+// by making sure all promises have catch that reports to next()
 
 /**
  * Listen on provided port, on all network interfaces.
@@ -32,8 +29,17 @@ const server = http.createServer(webApp);
 const localBlogRepoPath = path.join(process.cwd(), conf.ARTICLES_DIR_PATH);
 async.waterfall([
   function initModel(cb) {
-    model.init(localBlogRepoPath, (err) => {
+    model.init(localBlogRepoPath, (err, settings) => {
       if (err) return cb({where: 'initModel', error: err});
+      heykaApp = webApp(settings);
+      heykaApp.set('port', port);
+
+      /**
+       * Create HTTP server.
+       */
+
+      server = http.createServer(heykaApp);
+
       console.log('* Model initialization complete');
       cb(null);
     });
@@ -45,17 +51,17 @@ async.waterfall([
   or replace it with your own templates / logic.
   */
   function initNav(cb) {
-    webApp.locals.navLinks = [];
-    webApp.locals.navLinks.push({
+    heykaApp.locals.navLinks = [];
+    heykaApp.locals.navLinks.push({
       label: 'Latests', key: 'latests', href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories)
     });
     model.db.categories.allDocs({include_docs: true}, (err, res) => {
       if (err) return cb({where: 'initNav', err: err});
-      //webApp.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
+      //heykaApp.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
       res.rows.forEach(doc => {
         let cat = doc.doc;
         //console.log('cat:', {label: cat.name, key: cat.id, href: cat.id});
-        webApp.locals.navLinks.push({
+        heykaApp.locals.navLinks.push({
           label: cat.name,
           key: cat.id,
           href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories, cat.id)
@@ -66,7 +72,7 @@ async.waterfall([
   }
 ], function initCompleteCallback(err) {
   if (err) throw `Error initializing application: ${err}.`;
-  console.log('* Pre-initialization complete.', webApp.locals.navLinks)
+  console.log('* Pre-initialization complete.', heykaApp.locals.navLinks)
   server.listen(port);
   server.on('error', onError);
   server.on('listening', onListening);

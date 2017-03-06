@@ -14,4 +14,4 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
 ---
 Link:
 
-Link to the text file in the assets folder [Read the readme.txt now!](/assets/readme.txt).
+Link to the text file in the assets folder [Read the readme.txt now!](assets/readme.txt).

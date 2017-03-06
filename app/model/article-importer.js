@@ -51,10 +51,12 @@ function initialImport(db, dirPath, cb) {
     myUtils.slugify(conf.BLOG_TITLE)
   );
 
-  const staticFilesDirPath = path.join(
+  const staticFilesDirPathPrefix = path.join(
     blogTempDirPath,
-    'staticFiles_' + moment().toArray().join('-')
+    conf.STATIC_FILES_DIR_PREFIX
   );
+
+  const staticFilesDirPath = staticFilesDirPathPrefix + moment().toArray().join('-');
 
   try {
     fs.accessSync(blogTempDirPath, fs.constants.R_OK | fs.constants.W_OK);
@@ -83,16 +85,36 @@ function initialImport(db, dirPath, cb) {
     console.log('==============================')
 
     // 2. Load articles - each is represented by a configuration file
-    async.eachSeries(articleConfPaths, loadArticle(db, staticFilesDirPath), (loadArticlesErr, res) => {
-      if (loadArticlesErr) {
-        // One of the iterations produced an error.
-        // All processing will now stop.
-        console.log('*** A file failed to process:', loadArticlesErr);
-        return cb(loadArticlesErr)
+    async.eachSeries(
+      articleConfPaths,
+      loadArticle(db, staticFilesDirPath),
+      (loadArticlesErr, res) => {
+        if (loadArticlesErr) {
+          // One of the iterations produced an error.
+          // All processing will now stop.
+          console.log('*** A file failed to process:', loadArticlesErr);
+          return cb(loadArticlesErr)
+        }
+        console.log('All files have been processed successfully.');
+        // TODO remove old static file folders if any
+        // TODO replace the model if refreshing local repo after pull...
+        glob(staticFilesDirPathPrefix + '*', (oldStaticGlobErr, oldStaticPaths) => {
+          oldStaticPaths = oldStaticPaths.filter(staticPath => staticPath !== staticFilesDirPath);
+
+          // async.everySeries doesn't work for some weird reason
+          async.every(oldStaticPaths, 1, (filePath, removeCb) => {
+              fs.remove(filePath, function(removeErr) {
+                if (removeErr) removeCb(removeErr);
+                removeCb(null);
+              });
+            }, (removeSeriesErr, result) => {
+              if (removeSeriesErr) return cb(removeSeriesErr);
+              cb(null, {staticFilesDirPath: staticFilesDirPath});
+            }
+          );
+        });
       }
-      console.log('All files have been processed successfully.');
-      cb(null);
-    });
+    );
   });
 }
 
@@ -344,6 +366,7 @@ function loadArticle(db, staticFilesDirPath) {
       console.log(`* Completed importing article: ${articleConfPath}.`);
       // //console.log('* full conf:', waterfallRes);
       // console.log('------------------------------');
+
       loadArticleCb(null, articleConfPath);
     });
   }
