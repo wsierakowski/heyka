@@ -29,7 +29,7 @@ const server = http.createServer(webApp);
 /**
  * Listen on provided port, on all network interfaces.
  */
-const localBlogRepoPath = path.join(process.cwd(), '_sample-blog-local-repo');
+const localBlogRepoPath = path.join(process.cwd(), conf.ARTICLES_DIR_PATH);
 async.waterfall([
   function initModel(cb) {
     model.init(localBlogRepoPath, (err) => {
