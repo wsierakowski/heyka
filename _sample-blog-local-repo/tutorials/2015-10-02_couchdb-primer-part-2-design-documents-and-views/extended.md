@@ -631,7 +631,7 @@ To better explain the group levels, lets use the example database presented at t
 }
 ```
 
-**Without reduction99 we will get the following results (ids truncated for brevity):
+**Without reduction we will get the following results (ids truncated for brevity):
 
 ```bash
 $ curl -X GET 'http://localhost:5984/blogarticles/_design/articles/_view/by_name_category?reduce=false'

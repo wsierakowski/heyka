@@ -73,9 +73,9 @@ router.get([
       include_docs: true,
       reduce: false
     };
-    let reduceQueryOptions = {}
+    let reduceQueryOptions = {};
 
-    let searchKey = req.params.category || req.params.tag
+    let searchKey = req.params.category || req.params.tag;
     if (searchKey) {
       queryOptions.endkey = reduceQueryOptions.startkey = [searchKey];
       queryOptions.startkey = reduceQueryOptions.endkey = [searchKey, {}];
@@ -84,7 +84,8 @@ router.get([
     let viewType;
     if (req.params.tag) viewType = 'articles/byTag';
     // else if there is a category or category is undefined (meaning all latest articles)
-    else viewType = 'articles/byCategory';
+    else if (req.params.category) viewType = 'articles/byCategory';
+    else viewType = 'articles/all';
 debugger
     model.db.articles.query(viewType, reduceQueryOptions, (reduceErr, resArticleCount) => {
       if (reduceErr) return next(reduceErr);

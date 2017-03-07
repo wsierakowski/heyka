@@ -10,6 +10,13 @@ function createViews(cb) {
   const designDoc = {
     _id: '_design/articles',
     views: {
+      all: {
+        map: (function mapFun(doc) {
+          emit([doc.publishedDate, doc.category._id]);
+        }).toString(),
+        //http://stackoverflow.com/questions/33902858/couchdb-returns-wrong-total-rows
+        reduce: '_count'
+      },
       byCategory: {
         map: (function mapFun(doc) {
           emit([doc.category._id, doc.publishedDate]);

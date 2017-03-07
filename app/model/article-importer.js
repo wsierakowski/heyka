@@ -102,7 +102,7 @@ function initialImport(db, dirPath, cb) {
           oldStaticPaths = oldStaticPaths.filter(staticPath => staticPath !== staticFilesDirPath);
 
           // async.everySeries doesn't work for some weird reason
-          async.every(oldStaticPaths, 1, (filePath, removeCb) => {
+          async.every(oldStaticPaths, (filePath, removeCb) => {
               fs.remove(filePath, function(removeErr) {
                 if (removeErr) removeCb(removeErr);
                 removeCb(null);
