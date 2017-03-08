@@ -73,7 +73,9 @@ router.get([
       include_docs: true,
       reduce: false
     };
-    let reduceQueryOptions = {};
+    let reduceQueryOptions = {
+      reduce: true
+    };
 
     let searchKey = req.params.category || req.params.tag;
     if (searchKey) {
@@ -116,7 +118,7 @@ debugger
         pagination.pagesList = Array.from(new Array(pagination.totalPages), (v,i) => i + 1);
 
         pagination.firstArticleIdxInCurPage = (pagination.currentPage - 1) * conf.ARTICLES_PER_PAGE + 1;
-        pagination.lastArticleIdxInCurPage = pagination.firstArticleIdxInCurPage + conf.ARTICLES_PER_PAGE - 1;
+        pagination.lastArticleIdxInCurPage = pagination.firstArticleIdxInCurPage + articles.length - 1;
 
         console.log('===> pagination', pagination);
 

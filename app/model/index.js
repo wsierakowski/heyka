@@ -32,7 +32,8 @@ function createViews(cb) {
               emit([doc.tags[i]._id, doc.publishedDate]);
             }
           }
-        }).toString()
+        }).toString(),
+        reduce: '_count'
       }
     }
   };

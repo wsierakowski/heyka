@@ -25,7 +25,7 @@ mixin renderArticle(showBriefOnly, post)
               span.glyphicon.glyphicon-folder-open
               | &nbsp;&nbsp;
               a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.categories, post.category.id))= post.category.name
-              |
+              | 
             if post.tags && post.tags.length
               span.glyphicon.glyphicon-bookmark
               | &nbsp;&nbsp;
