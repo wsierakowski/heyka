@@ -27,18 +27,22 @@ class DBInterface {
   }
 
   count(collection, filter, cb) {
-    // collection = "articles"
+    // collection = 'articles'
 
     // filter = {
     //   category: 'tips'
     // };
   }
 
-  create(collection, newObj, cb) {
-    // collection = "articles"
+  create(collection, doc, cb) {
+    // collection = 'articles'
 
     // newObj = {
     //   _id = 'uniqueId'
     // }
+  }
+
+  upsert(collection, oldDoc, newDoc, cb) {
+    // collection = 'articles'
   }
 }

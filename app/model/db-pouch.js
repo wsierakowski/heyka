@@ -137,10 +137,38 @@ class DBPouch extends DBInterface {
     coll.query(viewType, opts, cb);
   }
 
-  create(collection, newObj, cb) {
+  create(collection, doc, cb) {
     _checkInitialised();
     const coll = _getCollection(collection);
 
+    coll.put(doc, cb);
+  }
 
+  upsert(collection, docId, newDoc, cb) {
+    _checkInitialised();
+    const coll = _getCollection(collection);
+
+    coll.get(docId, (err, doc) => {
+      // document doesn't exists yet so create new one
+      if (err) {
+          doc = newDoc;
+          doc._id = docId;
+      } else {
+        // otherwise update it - a bit hacky implementation but ok for this requirement
+        Object.keys(doc).forEach(function (key) {
+          if (Array.isArray(doc[key]) && newDoc[key] && Array.isArray(newDoc[key])) {
+            newDoc[key].forEach(item => {
+              doc[key].push(item);
+            });
+          } else {
+            doc[key] = newDoc[key];
+          }
+        });
+        coll.put(doc, (putErr, res) => {
+          if (putErr) return cb(putErr);
+          cb(null, res);
+        });
+      }
+    });
   }
 }
