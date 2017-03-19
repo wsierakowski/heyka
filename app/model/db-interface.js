@@ -42,7 +42,9 @@ class DBInterface {
     // }
   }
 
-  upsert(collection, oldDoc, newDoc, cb) {
+  upsert(collection, docId, newDoc, cb) {
     // collection = 'articles'
   }
 }
+
+module.exports = DBInterface;

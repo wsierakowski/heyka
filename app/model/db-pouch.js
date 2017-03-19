@@ -1,7 +1,7 @@
 const PouchDB = require('pouchdb-node');
 PouchDB.plugin(require('pouchdb-adapter-memory'));
 
-const DBCollectionsInterface = requrie('./db-collections-interface');
+const DBInterface = require('./db-interface');
 
 const articlesDesignDoc = {
   _id: '_design/articles',
@@ -36,6 +36,7 @@ const articlesDesignDoc = {
 
 class DBPouch extends DBInterface {
   constructor() {
+    super();
     this._initialised = false;
     this._entities = {};
     this._entities.articles = new PouchDB('articles', {adapter: 'memory'});
@@ -172,3 +173,5 @@ class DBPouch extends DBInterface {
     });
   }
 }
+
+module.exports = DBPouch;

@@ -71,7 +71,10 @@ async.waterfall([
     });
   }
 ], function initCompleteCallback(err) {
-  if (err) throw `Error initializing application: ${err}.`;
+  if (err) {
+    console.log('Ouch...', err);
+    throw `Error initializing application: ${err}.`;
+  }
   console.log('* Pre-initialization complete.', heykaApp.locals.navLinks)
   server.listen(port);
   server.on('error', onError);
