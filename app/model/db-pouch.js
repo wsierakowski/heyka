@@ -1,8 +1,17 @@
+// pouchdb-node:
+// https://pouchdb.com/custom.html
+//
+// pouchdb on memdown:
+// https://www.npmjs.com/package/pouchdb-adapter-memory
+// https://pouchdb.com/adapters.html#pouchdb_in_node_js
+
 const PouchDB = require('pouchdb-node');
 PouchDB.plugin(require('pouchdb-adapter-memory'));
 
 const DBInterface = require('./db-interface');
 
+// TODO: return articles with state published only
+// or actually don't even load articles that aren't state published into db?
 const articlesDesignDoc = {
   _id: '_design/articles',
   views: {
@@ -45,7 +54,7 @@ class DBPouch extends DBInterface {
   }
 
   _checkInitialised() {
-    if (!_initialised) throw `Database not initialised while attepting to execute find.`;
+    if (!this._initialised) throw `Database not initialised while attepting to execute find.`;
   }
 
   _getCollection(collection) {
@@ -63,24 +72,24 @@ class DBPouch extends DBInterface {
   }
 
   init(cb) {
-    _createArticleViews((err) => {
+    this._createArticleViews((err) => {
       if (err) return cb(err);
-      _initialised = true;
+      this._initialised = true;
       cb(null);
     });
   }
 
   findOne(collection, docId, cb) {
-    _checkInitialised();
-    const coll = _getCollection(collection);
+    this._checkInitialised();
+    const coll = this._getCollection(collection);
 
     coll.get(docId, cb);
   }
 
   find(collection, filter, queryOptions, cb) {
     if (collection !== 'articles') cb(`Collection '${collection}' isn't supported in find operation.`);
-    _checkInitialised();
-    const coll = _getCollection(collection);
+    this._checkInitialised();
+    const coll = this._getCollection(collection);
 
     const opts = {
       include_docs: true,
@@ -92,62 +101,71 @@ class DBPouch extends DBInterface {
 
     let viewType = 'articles/all';
 
-    if (filter.category) {
-      viewType = 'articles/byCategory'
-    } else if (filer.tag) {
-      viewType = 'articles/byTag';
-    }
+    if (filter) {
+      if (filter.category) {
+        viewType = 'articles/byCategory'
+      } else if (filter.tag) {
+        viewType = 'articles/byTag';
+      }
 
-    let catOrTagVal;
-    if (catOrTagVal = filter.category || filter.tag) {
-      if (opts.descending) {
-        opts.startkey = [catOrTagVal, {}];
-        opts.endkey = [catOrTagVal];
-      } else {
-        opts.startkey = [catOrTagVal];
-        opts.endkey = [catOrTagVal, {}];
+      let catOrTagVal;
+      if (catOrTagVal = filter.category || filter.tag) {
+        if (opts.descending) {
+          opts.startkey = [catOrTagVal, {}];
+          opts.endkey = [catOrTagVal];
+        } else {
+          opts.startkey = [catOrTagVal];
+          opts.endkey = [catOrTagVal, {}];
+        }
       }
     }
 
-    coll.query(viewType, opts, cb);
+    coll.query(viewType, opts, (err, res) => {
+      if (err) return cb(err);
+      cb(null, res.rows);
+    });
   }
 
   count(collection, filter, cb) {
+    debugger;
     if (collection !== 'articles') cb(`Collection '${collection}' isn't supported in find operation.`);
-    _checkInitialised();
-    const coll = _getCollection(collection);
+    this._checkInitialised();
+    const coll = this._getCollection(collection);
 
     const opts = {
       reduce: true
     };
 
     let viewType = 'articles/all';
-
-    if (filter.category) {
-      viewType = 'articles/byCategory'
-    } else if (filer.tag) {
-      viewType = 'articles/byTag';
+    if (filter) {
+      if (filter.category) {
+        viewType = 'articles/byCategory'
+      } else if (filter.tag) {
+        viewType = 'articles/byTag';
+      }
+      let catOrTagVal;
+      if (catOrTagVal = filter.category || filter.tag) {
+        opts.startkey = [catOrTagVal];
+        opts.endkey = [catOrTagVal, {}];
+      }
     }
 
-    let catOrTagVal;
-    if (catOrTagVal = filter.category || filter.tag) {
-      opts.startkey = [catOrTagVal];
-      opts.endkey = [catOrTagVal, {}];
-    }
-
-    coll.query(viewType, opts, cb);
+    coll.query(viewType, opts, (err, res) => {
+      if (err) return cb(err);
+      cb(null, res.rows[0].value);
+    });
   }
 
   create(collection, doc, cb) {
-    _checkInitialised();
-    const coll = _getCollection(collection);
+    this._checkInitialised();
+    const coll = this._getCollection(collection);
 
     coll.put(doc, cb);
   }
 
   upsert(collection, docId, newDoc, cb) {
-    _checkInitialised();
-    const coll = _getCollection(collection);
+    this._checkInitialised();
+    const coll = this._getCollection(collection);
 
     coll.get(docId, (err, doc) => {
       // document doesn't exists yet so create new one

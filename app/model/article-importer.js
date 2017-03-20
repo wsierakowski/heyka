@@ -336,17 +336,17 @@ function loadArticle(db, staticFilesDirPath) {
             //console.log(filePath)
             //let grzyb = path.join(articlePath, conf.content.brief)
             //console.log(grzyb);
-            //debugger;
+            ////debugger;
             ///Users/wsierak/Projects/learning/heyka/_sample-blog-local-repo/tips/2017-03-06_testing-articles-with-images/assets/large_img1.jpg
             ///Users/wsierak/Projects/learning/heyka/_sample-blog-local-repo/tips/2017-03-06_testing-articles-with-images/brief.html
 
             const fileDir = path.relative(articlePath, path.dirname(filePath));
-            debugger;
+            //debugger;
             const targetPath = path.join(targetArticlePath, fileDir, path.basename(filePath));
 
             fs.copy(filePath, targetPath, fileCpErr => {
               if (fileCpErr) return copyStaticFileCb(fileCpErr);
-              debugger;
+              //debugger;
               copyStaticFileCb(null);
             });
           }, function copyStaticFilesForArticleCallback(copyStaticFilesErr, res) {

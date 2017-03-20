@@ -11,6 +11,7 @@ const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
 const router = express.Router();
+const blog = model.blogDB;
 
 /*
 app.get('/users/:userId/books/:bookId', function (req, res) {
@@ -35,20 +36,19 @@ router.get([
     myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories, ':category'),
     myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.tags, ':tag'),
     myUtils.generateURL(conf.BLOG_PATHS.blog)
-  ],
-  function(req, res, next) {
+  ], function nofavicon(req, res, next) {
     if (req.params.category === 'favicon.ico') {
       return res.send(404);
     }
     next();
-  },
-  middleware.initLocals,
+  }, middleware.initLocals,
   middleware.fetchCategories,
   middleware.fetchTags,
   middleware.fetchLatestPosts,
   middleware.fetchPopularPosts,
   function renderArticleList(req, res, next) {
     let locals = res.locals;
+    // TODO: Why do I need that?
     locals.section = 'list';
     locals.filters = {
       category: req.params.category,
@@ -63,51 +63,33 @@ router.get([
 
     let curPage = req.query.page || 1;
 
-    let skip = (curPage - 1) * conf.ARTICLES_PER_PAGE;
+    let filter = {};
+    if (req.params.category) filter.category = req.params.category;
+    else if (req.params.tag) filter.tag = req.params.tag;
 
-    let queryOptions = {
-      skip: skip,
+    let queryOpt = {
+      skip: (curPage - 1) * conf.ARTICLES_PER_PAGE,
       limit: conf.ARTICLES_PER_PAGE,
-      //key: req.params.category,
-      descending: true,
-      include_docs: true,
-      reduce: false
-    };
-    let reduceQueryOptions = {
-      reduce: true
+      direction: -1
     };
 
-    let searchKey = req.params.category || req.params.tag;
-    if (searchKey) {
-      queryOptions.endkey = reduceQueryOptions.startkey = [searchKey];
-      queryOptions.startkey = reduceQueryOptions.endkey = [searchKey, {}];
-    }
+    blog.count(blog.col.ARTICLES, filter, (countErr, countResponse) => {
+      if (countErr) return next(countErr);
+      let articleCount = countResponse;
 
-    let viewType;
-    if (req.params.tag) viewType = 'articles/byTag';
-    // else if there is a category or category is undefined (meaning all latest articles)
-    else if (req.params.category) viewType = 'articles/byCategory';
-    else viewType = 'articles/all';
-debugger
-    model.db.articles.query(viewType, reduceQueryOptions, (reduceErr, resArticleCount) => {
-      if (reduceErr) return next(reduceErr);
-      let articleCount = resArticleCount.rows[0].value;
+      blog.find(blog.col.ARTICLES, filter, queryOpt, (findErr, findResponse) => {
+        if (findErr) return next(findErr);
 
-      model.db.articles.query(viewType, queryOptions, (articlesErr, resArticles) => {
-        if (articlesErr) return next(articlesErr);
-        let articles = [];
-        resArticles.rows.forEach(item => {
-          item.doc.publishedDate = moment(item.doc.publishedDate);
-          item.doc.image = {exists: false};
-          articles.push(item.doc);
-          console.log('->', item.doc._id);
+        // TODO: rename posts to articles
+        let articles = locals.data.posts.results = findResponse.map(item => {
+          const doc = item.doc;
+          doc.publishedDate = moment(item.doc.publishedDate);
+          doc.image = {exists: false};
+          return doc;
         });
 
         if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
         else if (req.params.tag) console.log(`got all articles for tag ${req.params.tag}.`);
-
-        // TODO: rename posts to articles
-        locals.data.posts.results = articles;
 
         let pagination = {};
         pagination.totalArticles = articleCount;//resArticles.total_rows;
@@ -122,6 +104,7 @@ debugger
 
         console.log('===> pagination', pagination);
 
+        // TODO: update views to use the pagination object
         locals.data.posts.first = pagination.firstArticleIdxInCurPage;
         locals.data.posts.last = pagination.lastArticleIdxInCurPage;
         locals.data.posts.total = pagination.totalArticles;
@@ -131,16 +114,18 @@ debugger
         locals.data.posts.next = pagination.nextPage;
         locals.data.posts.pages = pagination.pagesList;
 
+        // get the category details
         if (req.params.category) {
-          model.db.categories.get(req.params.category, (catErr, catDoc) => {
+          blog.findOne(blog.col.CATEGORIES, req.params.category, (catErr, catDoc) => {
+            debugger;
             if (catErr) return next(catErr);
             //console.log('category doc-->', catDoc);
             locals.data.category = catDoc;
             res.render('blog');
           });
         } else if (req.params.tag) {
-          model.db.tags.get(req.params.tag, (tagErr, tagDoc) => {
-            if (tagErr) return next(tagErr);
+          blog.findOne(blog.col.TAGS, req.params.tag, (tagErr, tagDoc) => {
+            if (tagErr) return next(tagDoc);
             //console.log('tag doc-->', tagDoc);
             locals.data.tag = tagDoc;
             res.render('blog');
@@ -151,84 +136,8 @@ debugger
           res.render('blog');
         }
       });
-
     });
-
-    // if (0) {
-    //   model.db.categories.get(req.params.category, (catErr, catDoc) => {
-    //     if (catErr) return next(catErr);
-    //     //console.log('category doc-->', catDoc);
-    //     locals.data.category = catDoc;
-    //     async.eachSeries(
-    //       catDoc.articles,
-    //       (article, cb) => {
-    //         model.db.articles.get(article, (articleErr, articleDoc) => {
-    //           if (articleErr) return cb(articleErr);
-    //           // TODO create utility to post-process articles before sending them to render
-    //           articleDoc.publishedDate = moment(articleDoc.publishedDate);
-    //           // TODO add article intro image support
-    //           articleDoc.image = {exists: false};
-    //           locals.data.posts.results.push(articleDoc);
-    //           console.log('->', articleDoc._id);
-    //           cb(null);
-    //         })
-    //       }, err => {
-    //         if (err) return next(err);
-    //         console.log(`got all articles for category ${req.params.category}.`);
-    //         locals.data.posts.results.sort((a, b) => {
-    //           if (a.publishedDate < b.publishedDate)
-    //             return 1;
-    //           if (a.publishedDate > b.publishedDate)
-    //             return -1;
-    //           return 0;
-    //         });
-    //         res.render('blog');
-    //       });
-    //   });
-    // }
-});
-
-// router.get('/:post', function(req, res, next) {
-//
-//   // fetch categories
-//   res.locals.data = res.locals.data || {};
-//
-//   res.locals.data.categories = [];
-//   res.locals.data.categories.push({id: 123, key: 'oneTwoThree_key', name: 'oneTwoThree', postCount: 123});
-//   res.locals.data.categories.push({id: 456, key: 'fourFiveSix_key', name: 'fourFiveSix', postCount: 456});
-//
-//   // fetch tags
-//   res.locals.data.tags = [];
-//   res.locals.data.tags.push({key: 'tag1_key', name: 'tag1', postCount: 10});
-//   res.locals.data.tags.push({key: 'tag2_key', name: 'tag2', postCount: 20});
-//
-//   // fetch latest posts (where state=published, limit 5, sort -publishDate)
-//   res.locals.data.latestPosts = [{
-//     slug: 'some-random-latest-article-post', title: 'some random latest article post'
-//   }];
-//
-//   // fetch popular posts (where state=published, limit 5, sort -hits)
-//   res.locals.data.popularPosts = [{
-//     slug: 'some-random-popular-article-post',
-//     title: 'some random popular article post'
-//   }];
-//
-//   // general
-//   res.locals.data.post = model.articles[0];
-//   //res.locals.data.category.id = 123;
-//   res.locals.filters  = req.params.post;
-//
-//   // why do we need this:
-//   res.locals.section = 'blog - why do i need this?';
-//
-//   //res.render('post');
-//   res.render('article');
-// });
-
-// router.get('/:category', function(req, res, next) {
-//   res.locals.grzyb = req.params.category;
-//   res.render('index', { title: 'Express' });
-// });
+  });
 
 /* GET article */
 router.get(

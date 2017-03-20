@@ -1,6 +1,14 @@
 class DBInterface {
   construnctor() {}
 
+  get col() {
+    return {
+      ARTICLES: 'articles',
+      CATEGORIES: 'categories',
+      TAGS: 'tags'
+    };
+  }
+
   init(cb) {
     // do all the init tasks
   }
