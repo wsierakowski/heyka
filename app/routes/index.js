@@ -115,7 +115,6 @@ router.get([
         locals.data.posts.previous = pagination.previousPage;
         locals.data.posts.next = pagination.nextPage;
         locals.data.posts.pages = pagination.pagesList;
-        debugger;
         // get the category details
         if (req.params.category) {
           blog.findOne(blog.col.CATEGORIES, req.params.category, (catErr, catDoc) => {

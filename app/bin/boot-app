@@ -15,7 +15,7 @@ const conf = require('../config');
 
 const model = require('../model');
 const ArticleImporter = require('../article-importer');
-
+const articleImporter = new ArticleImporter();
 
 var heykaApp, server;
 
@@ -31,32 +31,22 @@ const port = normalizePort(process.env.PORT || '3000');
 /**
  * Listen on provided port, on all network interfaces.
  */
-//const localBlogRepoPath = path.join(process.cwd(), conf.ARTICLES_DIR_PATH);
-//const blogPaths = appConf.getBlogPaths();
 
 async.waterfall([
-  function initModel(cb) {
-    
-    // model.init(localBlogRepoPath, (err, settings) => {
-    //   if (err) return cb({where: 'initModel', error: err});
-    model.init(err => {
-      // TODO: make it waterfall
-      articleImporter = new ArticleImporter();
-      articleImporter.initialImport(err => {
-        if (err) return cb({where: 'initModel', error: err});
-        heykaApp = webApp(conf.app.paths.staticFilesDir);
-        heykaApp.set('port', port);
+  model.init,
+  articleImporter.initialImport,
+  function initialiseWebApp(cb) {
+    heykaApp = webApp();
+    heykaApp.set('port', port);
 
-        /**
-         * Create HTTP server.
-         */
+    /**
+     * Create HTTP server.
+     */
 
-        server = http.createServer(heykaApp);
+    server = http.createServer(heykaApp);
 
-        console.log('* Model initialization complete');
-        cb(null);
-      });
-    });
+    console.log('* Model initialization complete');
+    cb(null);
   },
 
   /**

@@ -44,32 +44,9 @@ class ArticleImporter {
   }
 }
 
-function initialImport(/*db, dirPath, */cb) {
-  // 0. Create folder for static files
-  // const blogTempDirPath = path.join(
-  //   os.tmpdir(),
-  //   myUtils.slugify(conf.BLOG_TITLE)
-  // );
-  //
-  // const staticFilesDirPathPrefix = path.join(
-  //   blogTempDirPath,
-  //   conf.STATIC_FILES_DIR_PREFIX
-  // );
-  //
-  // const staticFilesDirPath = staticFilesDirPathPrefix + moment().toArray().join('-');
+function initialImport(cb) {
 
   myFsUtils.makeDirSync(conf.app.paths.tempDir);
-  // try {
-  //   fs.accessSync(blogTempDirPath, fs.constants.R_OK | fs.constants.W_OK);
-  // } catch (err) {
-  //   if (err.code === "ENOENT") {
-  //     /// && err.message.indexOf('ENOENT: no such file or directory') !== -1) {
-  //     console.log('* 2. Tempdir doesn\'t exist so it needs to be created.');
-  //     fs.mkdirSync(blogTempDirPath);
-  //   } else {
-  //     return cb(`Process doesn't have permission to access ${tempdir}.`);
-  //   }
-  // }
 
   // TODO - can both makeDirSyncs be one?
   myFsUtils.makeDirSync(conf.app.paths.staticFilesDir);
@@ -228,7 +205,6 @@ function loadArticle(/*db, staticFilesDirPath*/) {
         async.series([
           function pushArticle(pcb) {
             // Push article
-            //db.articles.put(articleConf, (err, doc) => {
             blog.create(blog.col.ARTICLES, articleConf, (err, doc) => {
               if (err) return pcb({where: 'pushArticle', path: articleConfPath, error: err});
               pcb(null);
@@ -238,23 +214,6 @@ function loadArticle(/*db, staticFilesDirPath*/) {
             // Upsert category...
             // if category exists, append article to list of articles
             // otherwise create a new doc
-            // db.categories.get(articleConf.category._id, (err, doc) => {
-            //   if (err) {
-            //     doc = {
-            //       _id: articleConf.category._id,
-            //       id: articleConf.category.id,
-            //       name: articleConf.category.name,
-            //       articles: [articleConf._id]
-            //     };
-            //   } else {
-            //     doc.articles.push(articleConf._id);
-            //   }
-            //   db.categories.put(doc, (ierr, res) => {
-            //     if (ierr) return pcb({where: 'pushCategory', path: articleConfPath, error: ierr});
-            //     pcb(null);
-            //   });
-            // });
-            //-------------------------
             blog.upsert(
               blog.col.CATEGORIES,
               articleConf.category._id, {
@@ -267,31 +226,12 @@ function loadArticle(/*db, staticFilesDirPath*/) {
                 if (err) return pcb({where: 'pushCategory', path: articleConfPath, error: err});
                 pcb(null);
               });
-            //-------------------------
           },
           // Upsert each tag...
           function pushTags(pcb) {
             // Upsert tags...
             async.eachLimit(articleConf.tags, 1,
               function pushTagsIteratee(tag, tagCallback) {
-              //   db.tags.get(tag._id, (err, doc) => {
-              //     if (err) {
-              //       doc = {
-              //         _id: tag._id,
-              //         id: tag.id,
-              //         name: tag.name,
-              //         articles: [articleConf._id]
-              //       };
-              //     } else {
-              //       doc.articles.push(articleConf._id);
-              //     }
-              //     db.tags.put(doc, (ierr, res) => {
-              //       if (ierr) return tagCallback({tag: tag, error: ierr});
-              //       tagCallback(null);
-              //     });
-              //   });
-              // },
-              // ---------------
                 blog.upsert(
                   blog.col.TAGS,
                   tag._id, {
@@ -305,7 +245,6 @@ function loadArticle(/*db, staticFilesDirPath*/) {
                   }
                 );
               },
-              // ---------------
               function pushTagsCallback(pushTagsErr) {
                 if (pushTagsErr) return pcb({where: 'pushTags', path: articleConfPath, error: pushTagsErr});
                 pcb(null);
@@ -317,72 +256,6 @@ function loadArticle(/*db, staticFilesDirPath*/) {
           cb(null, articleConf);
         });
       },
-
-      // // 6. Push each articleConf with article content to local db
-      // function pushArticles2DB(articleConf, cb) {
-      //   async.series([
-      //     function pushArticle(pcb) {
-      //       // Push article
-      //       //debugger
-      //       blog.create(blog.col.ARTICLES, articleConf, (err, doc) => {
-      //         if (err) return pcb({where: 'pushArticle', path: articleConfPath, error: ierr});
-      //         pcb(null);
-      //       });
-      //     },
-      //     function pushCategory(pcb) {
-      //       // Upsert category...
-      //       // if category exists, append article to list of articles
-      //       // otherwise create a new doc
-      //       db.categories.get(articleConf.category._id, (err, doc) => {
-      //         if (err) {
-      //           doc = {
-      //             _id: articleConf.category._id,
-      //             id: articleConf.category.id,
-      //             name: articleConf.category.name,
-      //             articles: [articleConf._id]
-      //           };
-      //         } else {
-      //           doc.articles.push(articleConf._id);
-      //         }
-      //         db.categories.put(doc, (ierr, res) => {
-      //           if (ierr) return pcb({where: 'pushCategory', path: articleConfPath, error: ierr});
-      //           pcb(null);
-      //         });
-      //       });
-      //     },
-      //     // Upsert each tag...
-      //     function pushTags(pcb) {
-      //       // Upsert tags...
-      //       async.eachLimit(articleConf.tags, 1,
-      //         function pushTagsIteratee(tag, tagCallback) {
-      //           db.tags.get(tag._id, (err, doc) => {
-      //             if (err) {
-      //               doc = {
-      //                 _id: tag._id,
-      //                 id: tag.id,
-      //                 name: tag.name,
-      //                 articles: [articleConf._id]
-      //               };
-      //             } else {
-      //               doc.articles.push(articleConf._id);
-      //             }
-      //             db.tags.put(doc, (ierr, res) => {
-      //               if (ierr) return tagCallback({tag: tag, error: ierr});
-      //               tagCallback(null);
-      //             });
-      //           });
-      //         },
-      //         function pushTagsCallback(pushTagsErr) {
-      //           if (pushTagsErr) return pcb({where: 'pushTags', path: articleConfPath, error: pushTagsErr});
-      //           pcb(null);
-      //         }
-      //       );
-      //     }
-      //   ], function pushArticleCallback(pushArticleErr, pushArticleRes) {
-      //     if (pushArticleErr) return cb({where: 'pushArticle', path: articleConfPath, error: pushArticleErr});
-      //     cb(null, articleConf);
-      //   });
-      // },
 
       // 7. We don't want to serve static files directly from the git repo for few reasons
       // including security and the fact that if a file in a working directory was in use
@@ -443,7 +316,6 @@ function loadArticle(/*db, staticFilesDirPath*/) {
 
             fs.copy(filePath, targetPath, fileCpErr => {
               if (fileCpErr) return copyStaticFileCb(fileCpErr);
-              //debugger;
               copyStaticFileCb(null);
             });
           }, function copyStaticFilesForArticleCallback(copyStaticFilesErr, res) {
