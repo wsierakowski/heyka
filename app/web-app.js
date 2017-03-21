@@ -15,7 +15,7 @@ const db = require('./model').db;
 
 const app = express();
 
-function init(settings) {
+function init() {
   // view engine setup
   app.set('views', path.join(__dirname, 'views'));
   app.set('view engine', 'pug');
@@ -29,7 +29,7 @@ function init(settings) {
   // blog specific statics
   app.use(express.static(path.join(__dirname, 'public')));
   // article specific statics
-  app.use(express.static(settings.staticFilesDirPath, {index: false}));
+  app.use(express.static(conf.app.paths.staticFilesDir, {index: false}));
 
   app.use('/', index);
   app.use('/users', users);

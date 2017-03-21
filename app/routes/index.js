@@ -5,13 +5,15 @@ const async = require('async');
 const moment = require('moment');
 const cheerio = require('cheerio');
 
-const model = require('../model');
 const middleware = require('./middleware');
 const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
-const router = express.Router();
+const model = require('../model');
 const blog = model.blogDB;
+
+const router = express.Router();
+
 
 /*
 app.get('/users/:userId/books/:bookId', function (req, res) {
@@ -113,11 +115,10 @@ router.get([
         locals.data.posts.previous = pagination.previousPage;
         locals.data.posts.next = pagination.nextPage;
         locals.data.posts.pages = pagination.pagesList;
-
+        debugger;
         // get the category details
         if (req.params.category) {
           blog.findOne(blog.col.CATEGORIES, req.params.category, (catErr, catDoc) => {
-            debugger;
             if (catErr) return next(catErr);
             //console.log('category doc-->', catDoc);
             locals.data.category = catDoc;
@@ -142,6 +143,7 @@ router.get([
 /* GET article */
 router.get(
   myUtils.generateURL(conf.BLOG_PATHS.blog, ':category', ':post'),
+  // TODO: Handle favicons correctly
   function(req, res, next) {
     if (req.params.category === 'favicon.ico') {
       return res.send(404);
@@ -162,15 +164,18 @@ router.get(
     locals.data = locals.data || {};
     locals.data.posts = [];
 
-    model.db.articles.get(req.params.post, (err, articleDoc) => {
-      if (err) return next(err);
+    blog.findOne(blog.col.ARTICLES, req.params.post, (articleErr, articleDoc) => {
+      if (articleErr) return next(articleErr);
+
       // TODO create utility to post-process articles before sending them to render
       articleDoc.publishedDate = moment(articleDoc.publishedDate);
       articleDoc.image = {exists: false};
       locals.data.post = articleDoc;
-      res.render('article', (rerr, html) => {
-        if (rerr) return next(rerr);
+      res.render('article', (err, html) => {
+        if (err) return next(err);
+
         // TODO make it a module
+        // get markdown tables display nicely with bootstrap
         if (articleDoc.content.extendedType === "md") {
           const $ = cheerio.load(html);
           if (!$('table').attr('class')) {

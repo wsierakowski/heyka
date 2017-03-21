@@ -1,4 +1,4 @@
-const ArticleImporter = require('./article-importer');
+//const ArticleImporter = require('./article-importer');
 const BlogDB = require('./db-pouch');
 const blogDB = new BlogDB();
 
@@ -10,13 +10,14 @@ const tempDB = {
 };
 
 module.exports = {
-  init: (repoPath, cb) => {
-    blogDB.init(() => {
-      articleImporter = new ArticleImporter(repoPath, tempDB);
-      articleImporter.initialImport(cb);
-    });
+  init: (/*repoPath, */cb) => {
+    blogDB.init(cb);
+    // blogDB.init(() => {
+    //   articleImporter = new ArticleImporter(repoPath, tempDB);
+    //   articleImporter.initialImport(cb);
+    // });
   },
-  update: (cb) => articleImporter.repoUpdatedImport(cb),
+  //update: (cb) => articleImporter.repoUpdatedImport(cb),
   db: tempDB,
   blogDB: blogDB
 }

@@ -11,7 +11,9 @@
 const	async = require('async');
 const	myUtils = require('../libs/my-utils');
 const conf = require('../config');
+
 const model = require('../model');
+const blog = model.blogDB;
 
 
 /**

@@ -127,7 +127,6 @@ class DBPouch extends DBInterface {
   }
 
   count(collection, filter, cb) {
-    debugger;
     if (collection !== 'articles') cb(`Collection '${collection}' isn't supported in find operation.`);
     this._checkInitialised();
     const coll = this._getCollection(collection);
@@ -174,8 +173,8 @@ class DBPouch extends DBInterface {
           doc._id = docId;
       } else {
         // otherwise update it - a bit hacky implementation but ok for this requirement
-        Object.keys(doc).forEach(function (key) {
-          if (Array.isArray(doc[key]) && newDoc[key] && Array.isArray(newDoc[key])) {
+        Object.keys(newDoc).forEach(function (key) {
+          if (doc[key] && Array.isArray(doc[key]) && Array.isArray(newDoc[key])) {
             newDoc[key].forEach(item => {
               doc[key].push(item);
             });
@@ -183,11 +182,11 @@ class DBPouch extends DBInterface {
             doc[key] = newDoc[key];
           }
         });
-        coll.put(doc, (putErr, res) => {
-          if (putErr) return cb(putErr);
-          cb(null, res);
-        });
       }
+      coll.put(doc, (putErr, res) => {
+        if (putErr) return cb(putErr);
+        cb(null, res);
+      });
     });
   }
 }
