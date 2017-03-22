@@ -14,6 +14,8 @@ const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
 const model = require('../model');
+const blog = model.blogDB;
+
 const ArticleImporter = require('../article-importer');
 const articleImporter = new ArticleImporter();
 
@@ -54,15 +56,16 @@ async.waterfall([
   the navigation in the header, you may wish to change this array
   or replace it with your own templates / logic.
   */
+  // TODO: can this be moved into the web-app init for example... to keep boot-app clean?
   function initNav(cb) {
     heykaApp.locals.navLinks = [];
     heykaApp.locals.navLinks.push({
       label: 'Latests', key: 'latests', href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories)
     });
-    model.db.categories.allDocs({include_docs: true}, (err, res) => {
+    blog.find(blog.col.CATEGORIES, (err, res) => {
       if (err) return cb({where: 'initNav', err: err});
       //heykaApp.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
-      res.rows.forEach(doc => {
+      res.forEach(doc => {
         let cat = doc.doc;
         //console.log('cat:', {label: cat.name, key: cat.id, href: cat.id});
         heykaApp.locals.navLinks.push({

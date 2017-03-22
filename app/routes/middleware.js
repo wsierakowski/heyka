@@ -72,9 +72,9 @@ exports.fetchCategories = function(req, res, next) {
   locals.data = locals.data || {};
   locals.data.categories = [];
 
-  model.db.categories.allDocs({include_docs: true}, (err, catList) => {
+  blog.find(blog.col.CATEGORIES, (err, catList) => {
     if (err) return next(err);
-    catList.rows.forEach((category) => {
+    catList.forEach((category) => {
       locals.data.categories.push({
         id: category.doc.id,
         name: category.doc.name,
@@ -91,9 +91,9 @@ exports.fetchTags = function(req, res, next) {
   locals.data = locals.data || {};
   locals.data.tags = [];
 
-  model.db.tags.allDocs({include_docs: true}, (err, tagList) => {
+  blog.find(blog.col.TAGS, (err, tagList) => {
     if (err) return next(err);
-    tagList.rows.forEach((tag) => {
+    tagList.forEach((tag) => {
       locals.data.tags.push({
         id: tag.doc.id,
         name: tag.doc.name,

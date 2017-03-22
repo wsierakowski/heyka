@@ -87,9 +87,22 @@ class DBPouch extends DBInterface {
   }
 
   find(collection, filter, queryOptions, cb) {
-    if (collection !== 'articles') cb(`Collection '${collection}' isn't supported in find operation.`);
+    debugger;
+    if (typeof filter === 'function') {
+      cb = filter;
+      filter = {};
+      queryOptions = {};
+    } else if (typeof queryOptions === 'function') {
+      cb = queryOptions;
+      queryOptions = {};
+    }
     this._checkInitialised();
     const coll = this._getCollection(collection);
+
+    const resCb = (err, res) => {
+      if (err) return cb(err);
+      cb(null, res.rows);
+    }
 
     const opts = {
       include_docs: true,
@@ -99,31 +112,33 @@ class DBPouch extends DBInterface {
       limit: queryOptions.limit
     };
 
-    let viewType = 'articles/all';
+    if (collection === this.col.ARTICLES) {
 
-    if (filter) {
-      if (filter.category) {
-        viewType = 'articles/byCategory'
-      } else if (filter.tag) {
-        viewType = 'articles/byTag';
-      }
+      let viewType = 'articles/all';
 
-      let catOrTagVal;
-      if (catOrTagVal = filter.category || filter.tag) {
-        if (opts.descending) {
-          opts.startkey = [catOrTagVal, {}];
-          opts.endkey = [catOrTagVal];
-        } else {
-          opts.startkey = [catOrTagVal];
-          opts.endkey = [catOrTagVal, {}];
+      if (filter) {
+        if (filter.category) {
+          viewType = 'articles/byCategory'
+        } else if (filter.tag) {
+          viewType = 'articles/byTag';
+        }
+
+        let catOrTagVal;
+        if (catOrTagVal = filter.category || filter.tag) {
+          if (opts.descending) {
+            opts.startkey = [catOrTagVal, {}];
+            opts.endkey = [catOrTagVal];
+          } else {
+            opts.startkey = [catOrTagVal];
+            opts.endkey = [catOrTagVal, {}];
+          }
         }
       }
-    }
 
-    coll.query(viewType, opts, (err, res) => {
-      if (err) return cb(err);
-      cb(null, res.rows);
-    });
+      coll.query(viewType, opts, resCb);
+    } else {
+      coll.allDocs(opts, resCb);
+    }
   }
 
   count(collection, filter, cb) {
