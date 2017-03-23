@@ -53,6 +53,10 @@ class DBInterface {
   upsert(collection, docId, newDoc, cb) {
     // collection = 'articles'
   }
+
+  destroy(cb) {
+    // destroy db so that it could the memory is freed
+  }
 }
 
 module.exports = DBInterface;

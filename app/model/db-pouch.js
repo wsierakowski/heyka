@@ -5,6 +5,7 @@
 // https://www.npmjs.com/package/pouchdb-adapter-memory
 // https://pouchdb.com/adapters.html#pouchdb_in_node_js
 
+const async = require('async');
 const PouchDB = require('pouchdb-node');
 PouchDB.plugin(require('pouchdb-adapter-memory'));
 
@@ -203,6 +204,18 @@ class DBPouch extends DBInterface {
         cb(null, res);
       });
     });
+  }
+
+  destroy(cb) {
+    async.eachSeries(
+      this.col.keys(),
+      (key, asCb) => {
+        this._getCollection(this.col[key]).destroy(asCb);
+      },
+      (err) => {
+        return cb(err);
+      }
+    );
   }
 }
 
