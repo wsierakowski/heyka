@@ -1,70 +1,113 @@
+const DBPool = require('./db-pool');
 const BlogDB = require('./db-pouch');
-const blogDB = new BlogDB();
+//const blogDB = new BlogDB();
 
-module.exports = {
-  init: (cb) => {
-    blogDB.init(cb);
-  },
-  //update: (cb) => articleImporter.repoUpdatedImport(cb),
-  blogDB: blogDB
-}
+const ArticleImporter = require('../article-importer');
+const articleImporter = new ArticleImporter();
 
-// var _db = new PouchDB('foo');
-//
-// var reset = function() {
-//   _db.destroy().then(function() {
-//     _db = new PouchDB('foo');
-//   });
-// };
+const dbPool = new DBPool(BlogDB);
 
-class DBPool {
-  constructor(DB) {
-    this._DB = DB;
-    this._pool = [null, null];
-    this._info = [this.status.FREE, this.status.FREE];
-  }
+const NOT_INITIALISED = 0;
+const INITIALISING = 1;
+const RUNNING = 2;
+const UPDATING = 3;
+var modelStatus = NOT_INITIALISED;
 
-  get status() {
-    return {
-      FREE: 0,
-      LOADING: 1,
-      RUNNING: 2,
-      DESTROYING: 3
-    };
-  }
+class Model {
+  constructor() {}
 
-  get db() {
-    const runningIdx = this._info.indexOf(this.status.RUNNING);
-    if (runningIdx === -1) return null;
-    return this._pool[runningIdx];
-  }
-
-  getNextDb(cb) {
-    const freeIdx = this._info.indexOf(this.status.FREE);
-    if (freeIdx === -1) return null;
-    this._pool[freeIdx] = new this._DB();
-    this._info[freeIdx] = this.status.LOADING;
-    this._pool[freeIdx].init(err => {
-      if (err) return cb(err);
-      return cb(null, this._pool[freeIdx]);
+  static init(cb) {
+    if (modelStatus !== NOT_INITIALISED) {
+      return cb({code: 'model.01', msg: 'Trying to init model that is already initialised.'});
+    }
+    modelStatus = INITIALISING;
+    //blogDB.init(cb);
+    dbPool.getNextDb((poolErr, db) => {
+      if (poolErr) return cb(poolErr);
+      articleImporter.initialImport(db, importErr => {
+        if (importErr) return cb(importErr);
+        dbPool.swapDb(swapErr => {
+          if (swapErr) return cb(swapErr);
+          modelStatus = RUNNING;
+          cb(null);
+        });
+      });
     });
   }
 
-  swapDb(cb) {
-    const loadingIdx = this._info.indexOf(this.status.LOADING);
-    if (loadingIdx === -1) return null;
-    const runningIdx = this._info.indexOf(this.status.RUNNING);
-    if (runningIdx === -1) throw 'Error: no running db instance found in the DBPool.';
-
-    this._info[loadingIdx] = this.status.RUNNING;
-    this._info[runningIdx] = this.status.DESTROYING;
-
-    this._pool[loadingIdx].destroy(err => {
+  static update(cb) {
+    if (modelStatus !== RUNNING) {
+      return cb({code: 'model.02', msg: 'Trying to update model that isn\'t initialised yet.'});
+    }
+    dbPool.getNextDb((poolErr, db) => {
       if (err) return cb(err);
-      this._pool[runningIdx] = null;
-      this._info[runningIdx] = this.status.FREE;
-      cb(null);
+      modelStatus = UPDATING;
+      articleImporter.initialImport(db, importErr => {
+        if (importErr) return cb(importErr);
+        dbPool.swapDb(swapErr => {
+          if (swapErr) return cb(swapErr);
+          modelStatus = RUNNING;
+          cb(null);
+        });
+      });
     });
   }
 
+  static findOne(collection, docId, cb) {
+    return dbPool.db.findOne(collection, docId, cb);
+  }
+
+  static find(collection, filter, queryOptions, cb) {
+    return dbPool.db.find(collection, filter, queryOptions, cb);
+  }
+
+  static count(collection, filter, cb) {
+    return dbPool.db.count(collection, filter, cb);
+  }
+
+  static get col() {
+    return dbPool.db.col;
+  }
 }
+
+module.exports = Model;
+
+// module.exports = {
+//   init: (cb) => {
+//     if (modelStatus !== NOT_INITIALISED) {
+//       return cb({code: 'model.01', msg: 'Trying to init model that is already initialised.'});
+//     }
+//     modelStatus = INITIALISING;
+//     //blogDB.init(cb);
+//     dbPool.getNextDb((poolErr, db) => {
+//       if (poolErr) return cb(poolErr);
+//       articleImporter.initialImport(db, importErr => {
+//         if (importErr) return cb(importErr);
+//         dbPool.swapDb(swapErr => {
+//           if (swapErr) return cb(swapErr);
+//           modelStatus = RUNNING;
+//           cb(null);
+//         });
+//       });
+//     });
+//   },
+//   update: (cb) => {
+//     if (modelStatus !== RUNNING) {
+//       return cb({code: 'model.02', msg: 'Trying to update model that isn\'t initialised yet.'});
+//     }
+//     dbPool.getNextDb((poolErr, db) => {
+//       if (err) return cb(err);
+//       modelStatus = UPDATING;
+//       articleImporter.initialImport(db, importErr => {
+//         if (importErr) return cb(importErr);
+//         dbPool.swapDb(swapErr => {
+//           if (swapErr) return cb(swapErr);
+//           modelStatus = RUNNING;
+//           cb(null);
+//         });
+//       });
+//     });
+//   },
+//   blogDB: dbPool.db,
+//   getBlogDB: function() {return dbPool.db;}
+// }

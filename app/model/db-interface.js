@@ -55,7 +55,7 @@ class DBInterface {
   }
 
   destroy(cb) {
-    // destroy db so that it could the memory is freed
+    // destroy db so to free memory
   }
 }
 

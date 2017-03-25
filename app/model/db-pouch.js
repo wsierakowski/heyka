@@ -88,7 +88,6 @@ class DBPouch extends DBInterface {
   }
 
   find(collection, filter, queryOptions, cb) {
-    debugger;
     if (typeof filter === 'function') {
       cb = filter;
       filter = {};
@@ -97,6 +96,7 @@ class DBPouch extends DBInterface {
       cb = queryOptions;
       queryOptions = {};
     }
+    debugger;
     this._checkInitialised();
     const coll = this._getCollection(collection);
 

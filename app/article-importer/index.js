@@ -15,7 +15,6 @@ const myFsUtils = require('../libs/my-fs-utils');
 const conf = require('../config');
 
 const model = require('../model');
-const blog = model.blogDB;
 
 const validateArticleConf = require('./article-conf-validator');
 
@@ -34,18 +33,13 @@ const EXTS = {
 class ArticleImporter {
   constructor() {}
 
-  initialImport(cb) {
-    initialImport(cb);
-  }
-
   // TODO: instead of doing full reimport, make it smart and partial
   repoUpdatedImport(cb) {
-    repoUpdatedImport(cb);
+    cb('Not implemented');
   }
 }
 
-function initialImport(cb) {
-
+ArticleImporter.prototype.initialImport = function initialImport(blog, cb) {
   myFsUtils.makeDirSync(conf.app.paths.tempDir);
 
   // TODO - can both makeDirSyncs be one?
@@ -65,7 +59,7 @@ function initialImport(cb) {
     // 2. Load articles - each is represented by a configuration file
     async.eachSeries(
       articleConfPaths,
-      loadArticle(/*db, conf.app.paths.staticFilesDir*/),
+      loadArticle(blog/*, conf.app.paths.staticFilesDir*/),
       (loadArticlesErr, res) => {
         if (loadArticlesErr) {
           // One of the iterations produced an error.
@@ -96,11 +90,7 @@ function initialImport(cb) {
   });
 }
 
-function repoUpdatedImport(cb) {
-  cb('Not implemented');
-}
-
-function loadArticle(/*db, staticFilesDirPath*/) {
+function loadArticle(blog) {
   return function (articleConfPath, loadArticleCb) {
 
     const confExt = path.extname(articleConfPath).toLowerCase();

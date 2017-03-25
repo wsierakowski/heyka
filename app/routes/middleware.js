@@ -13,8 +13,6 @@ const	myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
 const model = require('../model');
-const blog = model.blogDB;
-
 
 /**
   Initialises the standard view locals
@@ -72,7 +70,7 @@ exports.fetchCategories = function(req, res, next) {
   locals.data = locals.data || {};
   locals.data.categories = [];
 
-  blog.find(blog.col.CATEGORIES, (err, catList) => {
+  model.find(model.col.CATEGORIES, (err, catList) => {
     if (err) return next(err);
     catList.forEach((category) => {
       locals.data.categories.push({
@@ -91,7 +89,7 @@ exports.fetchTags = function(req, res, next) {
   locals.data = locals.data || {};
   locals.data.tags = [];
 
-  blog.find(blog.col.TAGS, (err, tagList) => {
+  model.find(model.col.TAGS, (err, tagList) => {
     if (err) return next(err);
     tagList.forEach((tag) => {
       locals.data.tags.push({

@@ -11,8 +11,6 @@ const users = require('./routes/users');
 const myUtils = require('./libs/my-utils.js');
 const conf = require('./config');
 
-const db = require('./model').db;
-
 const app = express();
 
 function init() {

@@ -10,7 +10,6 @@ const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
 const model = require('../model');
-const blog = model.blogDB;
 
 const router = express.Router();
 
@@ -75,11 +74,11 @@ router.get([
       direction: -1
     };
 
-    blog.count(blog.col.ARTICLES, filter, (countErr, countResponse) => {
+    model.count(model.col.ARTICLES, filter, (countErr, countResponse) => {
       if (countErr) return next(countErr);
       let articleCount = countResponse;
 
-      blog.find(blog.col.ARTICLES, filter, queryOpt, (findErr, findResponse) => {
+      model.find(model.col.ARTICLES, filter, queryOpt, (findErr, findResponse) => {
         if (findErr) return next(findErr);
 
         // TODO: rename posts to articles
@@ -117,14 +116,14 @@ router.get([
         locals.data.posts.pages = pagination.pagesList;
         // get the category details
         if (req.params.category) {
-          blog.findOne(blog.col.CATEGORIES, req.params.category, (catErr, catDoc) => {
+          model.findOne(model.col.CATEGORIES, req.params.category, (catErr, catDoc) => {
             if (catErr) return next(catErr);
             //console.log('category doc-->', catDoc);
             locals.data.category = catDoc;
             res.render('blog');
           });
         } else if (req.params.tag) {
-          blog.findOne(blog.col.TAGS, req.params.tag, (tagErr, tagDoc) => {
+          model.findOne(model.col.TAGS, req.params.tag, (tagErr, tagDoc) => {
             if (tagErr) return next(tagDoc);
             //console.log('tag doc-->', tagDoc);
             locals.data.tag = tagDoc;
@@ -163,7 +162,7 @@ router.get(
     locals.data = locals.data || {};
     locals.data.posts = [];
 
-    blog.findOne(blog.col.ARTICLES, req.params.post, (articleErr, articleDoc) => {
+    model.findOne(model.col.ARTICLES, req.params.post, (articleErr, articleDoc) => {
       if (articleErr) return next(articleErr);
 
       // TODO create utility to post-process articles before sending them to render

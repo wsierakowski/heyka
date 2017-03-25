@@ -14,10 +14,6 @@ const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
 const model = require('../model');
-const blog = model.blogDB;
-
-const ArticleImporter = require('../article-importer');
-const articleImporter = new ArticleImporter();
 
 var heykaApp, server;
 
@@ -36,7 +32,6 @@ const port = normalizePort(process.env.PORT || '3000');
 
 async.waterfall([
   model.init,
-  articleImporter.initialImport,
   function initialiseWebApp(cb) {
     heykaApp = webApp();
     heykaApp.set('port', port);
@@ -62,7 +57,8 @@ async.waterfall([
     heykaApp.locals.navLinks.push({
       label: 'Latests', key: 'latests', href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories)
     });
-    blog.find(blog.col.CATEGORIES, (err, res) => {
+    debugger;
+    model.find(model.col.CATEGORIES, (err, res) => {
       if (err) return cb({where: 'initNav', err: err});
       //heykaApp.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
       res.forEach(doc => {
