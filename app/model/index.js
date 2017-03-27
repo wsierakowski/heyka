@@ -36,12 +36,14 @@ class Model {
   }
 
   static update(cb) {
+    console.log('\n\n\n INSIDE UPDATE \n\n\n')
     if (modelStatus !== RUNNING) {
       return cb({code: 'model.02', msg: 'Trying to update model that isn\'t initialised yet.'});
     }
     dbPool.getNextDb((poolErr, db) => {
       if (poolErr) return cb(poolErr);
       modelStatus = UPDATING;
+
       articleImporter.initialImport(db, importErr => {
         if (importErr) {
           console.log('** Error something went wrong with import while updating.', importErr);
@@ -55,6 +57,10 @@ class Model {
         });
       });
     });
+  }
+
+  static getName() {
+    return dbPool.db.name;
   }
 
   static findOne(collection, docId, cb) {

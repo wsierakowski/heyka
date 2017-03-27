@@ -15,6 +15,8 @@ const conf = require('./config');
 
 const app = express();
 
+var initialised = false;
+
 function init() {
   // view engine setup
   app.set('views', path.join(__dirname, 'views'));
@@ -32,12 +34,18 @@ function init() {
   app.use(express.static(conf.app.paths.staticFilesDir, {index: false}));
 
   app.get('/update', (req, res, next) => {
-    console.log('oh update?');
+    // TODO - make sure this isn't run before model is ready...
     res.status(200).send('thanks for update notification');
     model.update(err => {
-      if (err) return console.log(' **** GURU MEDITATION **** ');
-      console.log(' **** BLOG RUNNING ON AN UPDATED CONTENT **** ')
-      // TODO move initnav from boot-app here
+      if (err) {
+        console.log(' **** MODEL UPDATE FAILED **** ');
+        console.log(err);
+        console.log(' ************************* ');
+        return;
+      }
+      initNav(err => {
+        console.log(' **** BLOG RUNNING ON UPDATED CONTENT **** ')
+      });
     });
   });
 
@@ -66,7 +74,39 @@ function init() {
 
   app.locals.BLOG_PATHS = conf.BLOG_PATHS;
 
+  initialised = true;
+
   return app;
 }
 
-module.exports = init;
+/**
+The included layout depends on the navLinks array to generate
+the navigation in the header, you may wish to change this array
+or replace it with your own templates / logic.
+*/
+function initNav(cb) {
+  if (!initialised) return cb({where: 'initNav', msg: 'WebApp not initialised yet.'});
+  app.locals.navLinks = [];
+  app.locals.navLinks.push({
+    label: 'Latests', key: 'latests', href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories)
+  });
+  model.find(model.col.CATEGORIES, (err, res) => {
+    if (err) return cb({where: 'initNav', err: err});
+    //app.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
+    res.forEach(doc => {
+      let cat = doc.doc;
+      //console.log('cat:', {label: cat.name, key: cat.id, href: cat.id});
+      app.locals.navLinks.push({
+        label: cat.name,
+        key: cat.id,
+        href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories, cat.id)
+      });
+    });
+    cb(null);
+  });
+}
+
+module.exports = {
+  init: init,
+  initNav: initNav
+};

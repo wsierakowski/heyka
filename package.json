@@ -6,6 +6,7 @@
     "start": "node ./app/bin/boot-app"
   },
   "dependencies": {
+    "async": "^2.2.0",
     "body-parser": "~1.15.2",
     "cheerio": "^0.22.0",
     "cookie-parser": "~1.4.3",

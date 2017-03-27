@@ -14,8 +14,6 @@ const myUtils = require('../libs/my-utils');
 const myFsUtils = require('../libs/my-fs-utils');
 const conf = require('../config');
 
-const model = require('../model');
-
 const validateArticleConf = require('./article-conf-validator');
 
 const FILES = {
@@ -39,7 +37,7 @@ class ArticleImporter {
   }
 }
 
-ArticleImporter.prototype.initialImport = function initialImport(blog, cb) {
+ArticleImporter.prototype.initialImport = function initialImport(db, cb) {
   myFsUtils.makeDirSync(conf.app.paths.tempDir);
 
   // TODO - can both makeDirSyncs be one?
@@ -59,7 +57,7 @@ ArticleImporter.prototype.initialImport = function initialImport(blog, cb) {
     // 2. Load articles - each is represented by a configuration file
     async.eachSeries(
       articleConfPaths,
-      loadArticle(blog/*, conf.app.paths.staticFilesDir*/),
+      loadArticle(db/*, conf.app.paths.staticFilesDir*/),
       (loadArticlesErr, res) => {
         if (loadArticlesErr) {
           // One of the iterations produced an error.
@@ -69,18 +67,23 @@ ArticleImporter.prototype.initialImport = function initialImport(blog, cb) {
         }
         console.log('All files have been processed successfully.');
         // TODO remove old static file folders if any
-        // TODO replace the model if refreshing local repo after pull...
+        // TODO replace the db if refreshing local repo after pull...
         glob(conf.app.paths.staticFilesPrefix + '*', (oldStaticGlobErr, oldStaticPaths) => {
           oldStaticPaths = oldStaticPaths.filter(staticPath => staticPath !== conf.app.paths.staticFilesDir);
+          console.log('Paths for removal: ', oldStaticPaths);
 
           // async.everySeries doesn't work for some weird reason
           async.every(oldStaticPaths, (filePath, removeCb) => {
               fs.remove(filePath, function(removeErr) {
-                if (removeErr) removeCb(removeErr);
+                if (removeErr) {
+                  return removeCb(removeErr);
+                }
                 removeCb(null);
               });
             }, (removeSeriesErr, result) => {
-              if (removeSeriesErr) return cb(removeSeriesErr);
+              if (removeSeriesErr) {
+                return cb(removeSeriesErr);
+              }
               cb(null);
             }
           );
@@ -90,7 +93,7 @@ ArticleImporter.prototype.initialImport = function initialImport(blog, cb) {
   });
 }
 
-function loadArticle(blog) {
+function loadArticle(db) {
   return function (articleConfPath, loadArticleCb) {
 
     const confExt = path.extname(articleConfPath).toLowerCase();
@@ -192,64 +195,69 @@ function loadArticle(blog) {
 
       // 6. Push each articleConf with article content to local db
       function pushArticles2DB(articleConf, cb) {
-        async.series([
-          function pushArticle(pcb) {
-            // Push article
-            blog.create(blog.col.ARTICLES, articleConf, (err, doc) => {
-              if (err) return pcb({where: 'pushArticle', path: articleConfPath, error: err});
-              pcb(null);
-            });
-          },
-          function pushCategory(pcb) {
-            // Upsert category...
-            // if category exists, append article to list of articles
-            // otherwise create a new doc
-            blog.upsert(
-              blog.col.CATEGORIES,
-              articleConf.category._id, {
-                _id: articleConf.category._id,
-                id: articleConf.category.id,
-                name: articleConf.category.name,
-                articles: [articleConf._id]
-              },
-              (err, res) => {
-                if (err) return pcb({where: 'pushCategory', path: articleConfPath, error: err});
+        db.count(db.col.ARTICLES, {}, (myerr, count) => {
+          console.log('2-=-=-=-=-=-=-=-=-=-> db.name:', db.name, ' count:', count);
+
+          async.series([
+            function pushArticle(pcb) {
+              // Push article
+              db.create(db.col.ARTICLES, articleConf, (err, doc) => {
+                if (err) return pcb({where: 'pushArticle', path: articleConfPath, error: err});
                 pcb(null);
               });
-          },
-          // Upsert each tag...
-          function pushTags(pcb) {
-            // Upsert tags...
-            async.eachLimit(articleConf.tags, 1,
-              function pushTagsIteratee(tag, tagCallback) {
-                blog.upsert(
-                  blog.col.TAGS,
-                  tag._id, {
-                    _id: tag._id,
-                    id: tag.id,
-                    name: tag.name,
-                    articles: [articleConf._id]
-                  }, (err, res) => {
-                    if (err) return tagCallback({tag: tag, error: err});
-                    tagCallback(null);
-                  }
-                );
-              },
-              function pushTagsCallback(pushTagsErr) {
-                if (pushTagsErr) return pcb({where: 'pushTags', path: articleConfPath, error: pushTagsErr});
-                pcb(null);
-              }
-            );
-          }
-        ], function pushArticleCallback(pushArticleErr, pushArticleRes) {
-          if (pushArticleErr) return cb({where: 'pushArticle', path: articleConfPath, error: pushArticleErr});
-          cb(null, articleConf);
+            },
+            function pushCategory(pcb) {
+              // Upsert category...
+              // if category exists, append article to list of articles
+              // otherwise create a new doc
+              db.upsert(
+                db.col.CATEGORIES,
+                articleConf.category._id, {
+                  _id: articleConf.category._id,
+                  id: articleConf.category.id,
+                  name: articleConf.category.name,
+                  articles: [articleConf._id]
+                },
+                (err, res) => {
+                  if (err) return pcb({where: 'pushCategory', path: articleConfPath, error: err});
+                  pcb(null);
+                });
+            },
+            // Upsert each tag...
+            function pushTags(pcb) {
+              // Upsert tags...
+              async.eachLimit(articleConf.tags, 1,
+                function pushTagsIteratee(tag, tagCallback) {
+                  db.upsert(
+                    db.col.TAGS,
+                    tag._id, {
+                      _id: tag._id,
+                      id: tag.id,
+                      name: tag.name,
+                      articles: [articleConf._id]
+                    }, (err, res) => {
+                      if (err) return tagCallback({tag: tag, error: err});
+                      tagCallback(null);
+                    }
+                  );
+                },
+                function pushTagsCallback(pushTagsErr) {
+                  if (pushTagsErr) return pcb({where: 'pushTags', path: articleConfPath, error: pushTagsErr});
+                  pcb(null);
+                }
+              );
+            }
+          ], function pushArticleCallback(pushArticleErr, pushArticleRes) {
+            if (pushArticleErr) return cb({where: 'pushArticle', path: articleConfPath, error: pushArticleErr});
+            cb(null, articleConf);
+          });
         });
+
       },
 
       // 7. We don't want to serve static files directly from the git repo for few reasons
       // including security and the fact that if a file in a working directory was in use
-      // by the blog web app it would block git to update or remove it when syncing repos.
+      // by the db web app it would block git to update or remove it when syncing repos.
       // Therefore we copy all static files to the respective folder in the temp folder.
       // TODO: currently every time we run article-importer we create a new directory...
       // ...a better strategy would be to update rather than recreate
@@ -297,8 +305,8 @@ function loadArticle(blog) {
             //let grzyb = path.join(articlePath, articleConf.content.brief)
             //console.log(grzyb);
             ////debugger;
-            ///Users/wsierak/Projects/learning/heyka/_sample-blog-local-repo/tips/2017-03-06_testing-articles-with-images/assets/large_img1.jpg
-            ///Users/wsierak/Projects/learning/heyka/_sample-blog-local-repo/tips/2017-03-06_testing-articles-with-images/brief.html
+            ///Users/wsierak/Projects/learning/heyka/_sample-db-local-repo/tips/2017-03-06_testing-articles-with-images/assets/large_img1.jpg
+            ///Users/wsierak/Projects/learning/heyka/_sample-db-local-repo/tips/2017-03-06_testing-articles-with-images/brief.html
 
             const fileDir = path.relative(articlePath, path.dirname(filePath));
             //debugger;

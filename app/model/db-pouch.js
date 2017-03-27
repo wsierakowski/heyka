@@ -49,9 +49,9 @@ class DBPouch extends DBInterface {
     super(name);
     this._initialised = false;
     this._entities = {};
-    this._entities.articles = new PouchDB('articles', {adapter: 'memory'});
-    this._entities.categories = new PouchDB('categories', {adapter: 'memory'});
-    this._entities.tags = new PouchDB('tags', {adapter: 'memory'});
+    this._entities.articles = new PouchDB('articles' + name, {adapter: 'memory'});
+    this._entities.categories = new PouchDB('categories' + name, {adapter: 'memory'});
+    this._entities.tags = new PouchDB('tags' + name, {adapter: 'memory'});
   }
 
   _checkInitialised() {
@@ -96,7 +96,6 @@ class DBPouch extends DBInterface {
       cb = queryOptions;
       queryOptions = {};
     }
-    debugger;
     this._checkInitialised();
     const coll = this._getCollection(collection);
 
@@ -167,7 +166,10 @@ class DBPouch extends DBInterface {
 
     coll.query(viewType, opts, (err, res) => {
       if (err) return cb(err);
-      cb(null, res.rows[0].value);
+      let resCount = 0;
+      if (res.rows.length > 0)
+      resCount = res.rows[0].value;
+      cb(null, resCount);
     });
   }
 
@@ -208,7 +210,7 @@ class DBPouch extends DBInterface {
 
   destroy(cb) {
     async.eachSeries(
-      this.col.keys(),
+      Object.keys(this.col),
       (key, asCb) => {
         this._getCollection(this.col[key]).destroy(asCb);
       },

@@ -33,7 +33,7 @@ const port = normalizePort(process.env.PORT || '3000');
 async.waterfall([
   model.init,
   function initialiseWebApp(cb) {
-    heykaApp = webApp();
+    heykaApp = webApp.init();
     heykaApp.set('port', port);
 
     /**
@@ -46,33 +46,7 @@ async.waterfall([
 
     async.setImmediate(() => cb(null));
   },
-
-  /**
-  The included layout depends on the navLinks array to generate
-  the navigation in the header, you may wish to change this array
-  or replace it with your own templates / logic.
-  */
-  // TODO: can this be moved into the web-app init for example... to keep boot-app clean?
-  function initNav(cb) {
-    heykaApp.locals.navLinks = [];
-    heykaApp.locals.navLinks.push({
-      label: 'Latests', key: 'latests', href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories)
-    });
-    model.find(model.col.CATEGORIES, (err, res) => {
-      if (err) return cb({where: 'initNav', err: err});
-      //heykaApp.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
-      res.forEach(doc => {
-        let cat = doc.doc;
-        //console.log('cat:', {label: cat.name, key: cat.id, href: cat.id});
-        heykaApp.locals.navLinks.push({
-          label: cat.name,
-          key: cat.id,
-          href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories, cat.id)
-        });
-      });
-      cb(null);
-    });
-  }
+  webApp.initNav
 ], function initCompleteCallback(err) {
   if (err) {
     console.log('Ouch...', err);
