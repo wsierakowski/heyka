@@ -8,6 +8,8 @@ const bodyParser = require('body-parser');
 const index = require('./routes/index');
 const users = require('./routes/users');
 
+const model = require('./model');
+
 const myUtils = require('./libs/my-utils.js');
 const conf = require('./config');
 
@@ -28,6 +30,16 @@ function init() {
   app.use(express.static(path.join(__dirname, 'public')));
   // article specific statics
   app.use(express.static(conf.app.paths.staticFilesDir, {index: false}));
+
+  app.get('/update', (req, res, next) => {
+    console.log('oh update?');
+    res.status(200).send('thanks for update notification');
+    model.update(err => {
+      if (err) return console.log(' **** GURU MEDITATION **** ');
+      console.log(' **** BLOG RUNNING ON AN UPDATED CONTENT **** ')
+      // TODO move initnav from boot-app here
+    });
+  });
 
   app.use('/', index);
   app.use('/users', users);

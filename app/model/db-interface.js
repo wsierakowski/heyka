@@ -1,5 +1,7 @@
 class DBInterface {
-  construnctor() {}
+  constructor(name) {
+    this.name = name;
+  }
 
   get col() {
     return {
@@ -12,7 +14,6 @@ class DBInterface {
   init(cb) {
     // do all the init tasks
   }
-
 
   findOne(collection, docId, cb) {
     // collection = 'tags'

@@ -1,5 +1,6 @@
 class DBPool {
   constructor(DB) {
+    this._updateCounter = -1;
     this._DB = DB;
     this._pool = [null, null];
     this._info = [this.status.FREE, this.status.FREE];
@@ -25,16 +26,23 @@ class DBPool {
   }
 
   getNextDb(cb) {
-    console.log('* DBPool: Initialising next db.');
     const freeIdx = this._info.indexOf(this.status.FREE);
     if (freeIdx === -1) return cb({code: 'DBPool.01', msg: 'No dbs available.'});
-    this._pool[freeIdx] = new this._DB();
+    this._updateCounter++;
+    const dbName = 'db_(' + this._updateCounter + ')_' + freeIdx;
+    console.log(`* DBPool: Initialising next db: ${dbName}.`);
+    this._pool[freeIdx] = new this._DB(dbName);
     this._info[freeIdx] = this.status.LOADING;
     this._pool[freeIdx].init(err => {
       if (err) return cb(err);
-      console.log('* DBPool: Next db initialised.');
+      console.log(`* DBPool: Next db: ${dbName} initialised.`);
       return cb(null, this._pool[freeIdx]);
     });
+  }
+
+  recover(cb) {
+    // recovery after failed import
+    // remove db with LOADING status and set it as FREE
   }
 
   swapDb(cb) {
@@ -47,12 +55,12 @@ class DBPool {
     // detect whether this is a first run
     const freeIdx = this._info.indexOf(this.status.FREE);
     if (freeIdx) {
-      console.log('* DBPool: Swap run as first run.');
+      console.log(`* DBPool: First run, db: ${this._pool[loadingIdx].name} initialised.`);
       return cb(null);
     }
 
-
     const runningIdx = this._info.indexOf(this.status.RUNNING);
+
     if (runningIdx === -1) return cb({code: 'DBPool.03', msg: 'Error: no running db instance found in the DBPool.'});
 
     this._info[runningIdx] = this.status.DESTROYING;
@@ -65,7 +73,6 @@ class DBPool {
       cb(null);
     });
   }
-
 }
 
 module.exports = DBPool;

@@ -45,8 +45,8 @@ const articlesDesignDoc = {
 };
 
 class DBPouch extends DBInterface {
-  constructor() {
-    super();
+  constructor(name) {
+    super(name);
     this._initialised = false;
     this._entities = {};
     this._entities.articles = new PouchDB('articles', {adapter: 'memory'});

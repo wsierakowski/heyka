@@ -40,10 +40,14 @@ class Model {
       return cb({code: 'model.02', msg: 'Trying to update model that isn\'t initialised yet.'});
     }
     dbPool.getNextDb((poolErr, db) => {
-      if (err) return cb(err);
+      if (poolErr) return cb(poolErr);
       modelStatus = UPDATING;
       articleImporter.initialImport(db, importErr => {
-        if (importErr) return cb(importErr);
+        if (importErr) {
+          console.log('** Error something went wrong with import while updating.', importErr);
+          // TODO destroy db to allow next update in the future
+          return cb(importErr);
+        }
         dbPool.swapDb(swapErr => {
           if (swapErr) return cb(swapErr);
           modelStatus = RUNNING;

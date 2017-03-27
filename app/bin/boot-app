@@ -43,7 +43,8 @@ async.waterfall([
     server = http.createServer(heykaApp);
 
     console.log('* Model initialization complete');
-    cb(null);
+
+    async.setImmediate(() => cb(null));
   },
 
   /**
@@ -57,7 +58,6 @@ async.waterfall([
     heykaApp.locals.navLinks.push({
       label: 'Latests', key: 'latests', href: myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.categories)
     });
-    debugger;
     model.find(model.col.CATEGORIES, (err, res) => {
       if (err) return cb({where: 'initNav', err: err});
       //heykaApp.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
