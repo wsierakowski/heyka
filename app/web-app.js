@@ -15,9 +15,12 @@ const conf = require('./config');
 
 const app = express();
 
+
 var initialised = false;
 
 function init() {
+  console.log('WEB APP INIT');
+  var mainRouter = index();
   // view engine setup
   app.set('views', path.join(__dirname, 'views'));
   app.set('view engine', 'pug');
@@ -31,7 +34,8 @@ function init() {
   // blog specific statics
   app.use(express.static(path.join(__dirname, 'public')));
   // article specific statics
-  app.use(express.static(conf.app.paths.staticFilesDir, {index: false}));
+  //https://github.com/expressjs/express/issues/2596
+  //app.use(express.static(conf.app.paths.staticFilesDir, {index: false}));
 
   app.get('/update', (req, res, next) => {
     // TODO - make sure this isn't run before model is ready...
@@ -44,13 +48,18 @@ function init() {
         return;
       }
       initNav(err => {
-        console.log(' **** BLOG RUNNING ON UPDATED CONTENT **** ')
+        mainRouter = index();
+        console.log(' **** BLOG RUNNING ON UPDATED CONTENT **** ');
       });
     });
   });
 
-  app.use('/', index);
-  app.use('/users', users);
+  //app.use('/', index());
+  app.use('/', function (req, res, next) {
+    // this needs to be a function to hook on whatever the current router is
+    mainRouter(req, res, next);
+  });
+  //app.use('/users', users);
 
   // catch 404 and forward to error handler
   app.use(function(req, res, next) {

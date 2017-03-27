@@ -41,7 +41,7 @@ ArticleImporter.prototype.initialImport = function initialImport(db, cb) {
   myFsUtils.makeDirSync(conf.app.paths.tempDir);
 
   // TODO - can both makeDirSyncs be one?
-  myFsUtils.makeDirSync(conf.app.paths.staticFilesDir);
+  myFsUtils.makeDirSync(conf.app.paths.staticFilesDir + '_' + db.name);
 
   // 1. Locate all directories with conf files
   const globPath =
@@ -69,9 +69,11 @@ ArticleImporter.prototype.initialImport = function initialImport(db, cb) {
         // TODO remove old static file folders if any
         // TODO replace the db if refreshing local repo after pull...
         glob(conf.app.paths.staticFilesPrefix + '*', (oldStaticGlobErr, oldStaticPaths) => {
-          oldStaticPaths = oldStaticPaths.filter(staticPath => staticPath !== conf.app.paths.staticFilesDir);
+          oldStaticPaths = oldStaticPaths.filter(staticPath => staticPath !== conf.app.paths.staticFilesDir + '_' + db.name);
           console.log('Paths for removal: ', oldStaticPaths);
-
+          cb(null);
+          // we don't want to initialise new static router after folder is removed as otherwise
+          // for that brief moment when files are deleted users will not be able to fetch files...
           // async.everySeries doesn't work for some weird reason
           async.every(oldStaticPaths, (filePath, removeCb) => {
               fs.remove(filePath, function(removeErr) {
@@ -81,10 +83,11 @@ ArticleImporter.prototype.initialImport = function initialImport(db, cb) {
                 removeCb(null);
               });
             }, (removeSeriesErr, result) => {
-              if (removeSeriesErr) {
-                return cb(removeSeriesErr);
-              }
-              cb(null);
+              console.log('* ArticleImporter: Finished old static folders cleaup.')
+              // if (removeSeriesErr) {
+              //   return cb(removeSeriesErr);
+              // }
+              // cb(null);
             }
           );
         });
@@ -293,7 +296,7 @@ function loadArticle(db) {
           console.log(`articleStaticFiles for "${articlePath}": ${articleStaticFiles}`);
           console.log('==============================');
 
-          const targetArticlePath = path.join(conf.app.paths.staticFilesDir, articleConf.category._id, articleConf._id);
+          const targetArticlePath = path.join(conf.app.paths.staticFilesDir + '_' + db.name, articleConf.category._id, articleConf._id);
 
           // create article folder
 

@@ -60,6 +60,7 @@ class Model {
   }
 
   static getName() {
+    debugger;
     return dbPool.db.name;
   }
 
