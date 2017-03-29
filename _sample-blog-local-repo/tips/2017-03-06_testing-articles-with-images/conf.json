@@ -9,6 +9,7 @@
     "extendedType": "md"
   },
   "publishedDate": "2017-03-06T00:00:00.000+0000",
+  "published": true,
   "state": "published",
   "tags": ["testing"],
   "title": "Testing article with internal assets served as static files"

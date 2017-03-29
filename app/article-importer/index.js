@@ -136,6 +136,30 @@ function loadArticle(db) {
         });
       },
 
+      // 3.1 Preprocess conf
+      function preprocessConfig(articleConf, cb) {
+        if (articleConf.published === undefined) articleConf.published = true;
+
+        // to avoid "RangeError: Maximum call stack size exceeded."
+        async.setImmediate(function() {
+          cb(null, articleConf);
+        });
+      },
+
+      // 3.5 If the article conf indicates that it is not published then skip it
+      function skipArticleIfNotPublished(articleConf, cb) {
+        if (!articleConf.published) {
+          console.log(`* ArticleImporter: skipping article: "${articlePath}" as it is not set to be published.`);
+          // http://stackoverflow.com/questions/15420019/asyncjs-bypass-a-function-in-a-waterfall-chain
+          // https://github.com/caolan/async/pull/85
+          return waterfallCallback(null);
+        }
+        // to avoid "RangeError: Maximum call stack size exceeded."
+        async.setImmediate(function() {
+          cb(null, articleConf);
+        });
+      },
+
       // 4. Read brief and extended content
       function readBriefAndExtended(articleConf, cb) {
         const briefExt = path.extname(articleConf.content.brief).toLowerCase();
@@ -199,8 +223,6 @@ function loadArticle(db) {
       // 6. Push each articleConf with article content to local db
       function pushArticles2DB(articleConf, cb) {
         db.count(db.col.ARTICLES, {}, (myerr, count) => {
-          console.log('2-=-=-=-=-=-=-=-=-=-> db.name:', db.name, ' count:', count);
-
           async.series([
             function pushArticle(pcb) {
               // Push article
@@ -331,15 +353,18 @@ function loadArticle(db) {
           });
         });
       },
-    ], function waterfallCallback(waterfallErr, waterfallRes) {
+    ], waterfallCallback);
+    function waterfallCallback(waterfallErr, waterfallRes) {
       if (waterfallErr) return loadArticleCb(waterfallErr);
       console.log(`* Completed importing article: ${articleConfPath}.`);
       // //console.log('* full conf:', waterfallRes);
       // console.log('------------------------------');
 
       loadArticleCb(null, articleConfPath);
-    });
+    }
   }
 }
+
+
 
 module.exports = ArticleImporter;
