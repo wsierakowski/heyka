@@ -14,7 +14,8 @@ class AppConfig {
   static get paths() {
     if (!blogPaths) {
       blogPaths = {};
-      blogPaths.localRepoDir = path.join(process.cwd(), staticConf.ARTICLES_DIR_PATH);
+      //blogPaths.localRepoDir = path.join(process.cwd(), staticConf.ARTICLES_DIR_PATH);
+      blogPaths.localRepoDir = path.join(os.tmpdir(), staticConf.REPO_LOCAL_PATH);
       blogPaths.tempDir = path.join(os.tmpdir(), myUtils.slugify(staticConf.BLOG_TITLE));
       blogPaths.staticFilesPrefix = path.join(blogPaths.tempDir, staticConf.STATIC_FILES_DIR_PREFIX);
       blogPaths.staticFilesDir = path.join(blogPaths.staticFilesPrefix + moment().toArray().join('-'));

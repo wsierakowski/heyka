@@ -29,6 +29,7 @@ class Model {
         dbPool.swapDb(swapErr => {
           if (swapErr) return cb(swapErr);
           modelStatus = RUNNING;
+          debugger;
           cb(null);
         });
       });

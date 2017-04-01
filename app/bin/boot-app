@@ -14,6 +14,7 @@ const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
 const model = require('../model');
+const pullLocally = require('../content-updater/git-pull-locally');
 
 var heykaApp, server;
 
@@ -30,7 +31,10 @@ const port = normalizePort(process.env.PORT || '3000');
  * Listen on provided port, on all network interfaces.
  */
 
-async.waterfall([
+async.series([
+  function pullLocalRepo(cb) {
+    pullLocally(conf.app.paths.localRepoDir, conf.REPO_REMOTE_PATH, cb);
+  },
   model.init,
   function initialiseWebApp(cb) {
     heykaApp = webApp.init();

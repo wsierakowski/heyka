@@ -1,7 +1,9 @@
 module.exports = {
   BLOG_TITLE: 'heyka',
-  ARTICLES_DIR_PATH: '_sample-blog-local-repo',
+  //ARTICLES_DIR_PATH: '_sample-blog-local-repo',
   STATIC_FILES_DIR_PREFIX: 'staticFiles_',
+  REPO_REMOTE_PATH: 'https://github.com/wsierakowski/demo-content.git',
+  REPO_LOCAL_PATH: 'articles-repo',
   BLOG_PATHS: {
     blog: '/',
     categories: '',
