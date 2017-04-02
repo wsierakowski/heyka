@@ -6,7 +6,8 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 
 const index = require('./routes/index');
-const users = require('./routes/users');
+//const users = require('./routes/users');
+const webhook = require('./routes/github-webhook');
 
 const model = require('./model');
 
@@ -20,7 +21,23 @@ var initialised = false;
 
 function init() {
   console.log('WEB APP INIT');
-  var mainRouter = index();
+
+  const mainRouter = index();
+  const webhookRouter = webhook(function onWebhook(err, eventType) {
+    model.update(err => {
+      if (err) {
+        console.log(' **** MODEL UPDATE FAILED **** ');
+        console.log(err);
+        console.log(' ************************* ');
+        return;
+      }
+      initNav(err => {
+        mainRouter = index();
+        console.log(' **** BLOG RUNNING ON UPDATED CONTENT **** ');
+      });
+    });
+  });
+
   // view engine setup
   app.set('views', path.join(__dirname, 'views'));
   app.set('view engine', 'pug');
@@ -37,22 +54,24 @@ function init() {
   //https://github.com/expressjs/express/issues/2596
   //app.use(express.static(conf.app.paths.staticFilesDir, {index: false}));
 
-  app.get('/update', (req, res, next) => {
-    // TODO - make sure this isn't run before model is ready...
-    res.status(200).send('thanks for update notification');
-    model.update(err => {
-      if (err) {
-        console.log(' **** MODEL UPDATE FAILED **** ');
-        console.log(err);
-        console.log(' ************************* ');
-        return;
-      }
-      initNav(err => {
-        mainRouter = index();
-        console.log(' **** BLOG RUNNING ON UPDATED CONTENT **** ');
-      });
-    });
-  });
+  // app.get('/update', (req, res, next) => {
+  //   // TODO - make sure this isn't run before model is ready...
+  //   res.status(200).send('thanks for update notification');
+  //   model.update(err => {
+  //     if (err) {
+  //       console.log(' **** MODEL UPDATE FAILED **** ');
+  //       console.log(err);
+  //       console.log(' ************************* ');
+  //       return;
+  //     }
+  //     initNav(err => {
+  //       mainRouter = index();
+  //       console.log(' **** BLOG RUNNING ON UPDATED CONTENT **** ');
+  //     });
+  //   });
+  // });
+
+  app.use('/', webhookRouter);
 
   //app.use('/', index());
   app.use('/', function (req, res, next) {
