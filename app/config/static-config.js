@@ -9,6 +9,7 @@ module.exports = {
     categories: '',
     tags: 'tags'
   },
-  WEBHOOK_PATH: 'gitpush',
-  ARTICLES_PER_PAGE: 4
+  WEBHOOK_PATH: '/gitpush',
+  ARTICLES_PER_PAGE: 4,
+  BLOG_PORT: 8081
 };

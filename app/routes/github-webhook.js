@@ -1,5 +1,6 @@
+const crypto = require('crypto');
 const express = require('express');
-const bodyParser = require('body-parser');
+//const bodyParser = require('body-parser');
 
 const conf = require('../config');
 
@@ -24,11 +25,10 @@ if (!WEBHOOK_SECRET || typeof WEBHOOK_SECRET !== 'string' || WEBHOOK_SECRET.leng
  */
 function initWebhook(cb) {
   const router = express.Router();
-  router.use(bodyParser.json());
 
-  router.post(conf.WEBHOOK_PATH, function webhookRoute(req, res, next) {
+  router.post('/', function webhookRoute(req, res, next) {
+    debugger
     // TODO: if header origin isn't equal github then ignore straight away
-    const hmac = crypto.createHmac('sha1', WEBHOOK_SECRET);
 
     if (
         !req.get(HEADERS.SIGNATURE) ||
@@ -37,6 +37,8 @@ function initWebhook(cb) {
     ) {
       return res.status(400).send({ error: 'Missing required headers.' });
     }
+
+    const hmac = crypto.createHmac('sha1', WEBHOOK_SECRET);
 
     console.log('* GitHubWebHook: event received: ', req.headers[HEADERS.EVENT]);
 
@@ -47,8 +49,14 @@ function initWebhook(cb) {
     ) {
       return returnError(400, `Received unexpected event: ${req.headers[HEADERS.EVENT]}.`);
     }
-
-    hmac.update(req.body);
+    let bodyAsString;
+    try {
+      bodyAsString = JSON.stringify(req.body);
+    } catch (err) {
+      console.log('Req body not parsed:', err);
+      return next(`Error parsing reqest body as JSON: ${err}.`);
+    }
+    hmac.update(bodyAsString);
     let calcSignature = 'sha1=' + hmac.digest('hex');
 
     console.log(
@@ -61,7 +69,7 @@ function initWebhook(cb) {
       return res.status(400).send('Received signature doesn\'t match the calculated signature.');
     }
 
-    getInfo(reqBodyObj);
+    getInfo(req.body);
 
     res.end('OK');
 

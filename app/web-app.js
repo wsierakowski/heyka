@@ -14,6 +14,11 @@ const model = require('./model');
 const myUtils = require('./libs/my-utils.js');
 const conf = require('./config');
 
+const pullLocally = require('./content-updater/git-pull-locally');
+const TaskQueue = require('./content-updater/task-queue.js');
+
+const taskQueue = new TaskQueue({tasksLimit: 2, replaceLastIfLimitReached: true});
+
 const app = express();
 
 
@@ -22,18 +27,34 @@ var initialised = false;
 function init() {
   console.log('WEB APP INIT');
 
-  const mainRouter = index();
-  const webhookRouter = webhook(function onWebhook(err, eventType) {
-    model.update(err => {
-      if (err) {
-        console.log(' **** MODEL UPDATE FAILED **** ');
-        console.log(err);
-        console.log(' ************************* ');
-        return;
-      }
-      initNav(err => {
-        mainRouter = index();
-        console.log(' **** BLOG RUNNING ON UPDATED CONTENT **** ');
+  let mainRouter = index();
+  const webhookRouter = webhook(function onWebhook(webHookErr, eventType) {
+    if (webHookErr) return console.log('Webhook Error:', webHookErr);
+    // TODO: move as much of this logic as possible to the content-updater dir
+    // TODO: in case of error at any step destroy the db that failed to import
+    console.log(new Date(), '------> adding new task to taskqueue');
+    taskQueue.push(function newPullLocally() {
+      console.log(new Date(), '------> executing new task');
+      pullLocally(
+        conf.app.paths.localRepoDir,
+        conf.REPO_REMOTE_PATH,
+        function onNewPullComplete(pullErr) {
+          if (pullErr) return console.log('** New Pull went wrong:', pullErr);
+          model.update(function modelUpdateCallback(modelUpdateErr) {
+            if (modelUpdateErr) {
+              console.log(' **** MODEL UPDATE FAILED **** ');
+              console.log(modelUpdateErr);
+              console.log(' ************************* ');
+              return;
+            }
+            console.log(' **** MODEL UPDATE COMPLETE **** ');
+            initNav(function initNavCallback(initNavErr) {
+              if (initNavErr) return console.log('Error initialising navigation:', initNavErr);
+              mainRouter = index();
+              console.log(' **** BLOG RUNNING ON UPDATED CONTENT **** ');
+              taskQueue.shift();
+            });
+          });
       });
     });
   });
@@ -46,6 +67,8 @@ function init() {
   //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
   app.use(logger('dev'));
   app.use(bodyParser.json());
+  //app.use(bodyParser.raw());
+  //app.use(bodyParser.text());
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(cookieParser());
   // blog specific statics
@@ -71,7 +94,7 @@ function init() {
   //   });
   // });
 
-  app.use('/', webhookRouter);
+  app.use(conf.WEBHOOK_PATH, webhookRouter);
 
   //app.use('/', index());
   app.use('/', function (req, res, next) {

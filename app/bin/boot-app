@@ -22,7 +22,9 @@ var heykaApp, server;
  * Get port from environment and store in Express.
  */
 
-const port = normalizePort(process.env.PORT || '3000');
+// TODO: ports for webapp and for webhook should optionally be different
+// in this case there would be two servers run at the same time
+const port = normalizePort(process.env.PORT || conf.BLOG_PORT);
 
 // TODO Fix UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: 1)
 // by making sure all promises have catch that reports to next()
