@@ -18,10 +18,10 @@ conf.app.paths.staticFilesDir
 conf.app.paths.staticFilesPrefix
 -----------------
 contentProvider
-contentProvider.getArticleDirs
+contentProvider.getArticleDirs(['FILES.CONF'], ['EXTS.CONF.JSON', 'EXTS.CONF.YAML'])
 [{
   dirPath: '/news/20170522-nodejs-meetup',
-  confFilePath: 'conf.json',
+  confFile: 'conf.json',
   staticFiles: ['brief.md', 'extended.md', 'imgs/diagram1.png']
 }]
 contentProvider.getFileStream(path)
