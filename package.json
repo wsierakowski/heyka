@@ -25,5 +25,8 @@
     "simple-git": "^1.65.0",
     "slug": "^0.9.1",
     "yamljs": "^0.2.8"
+  },
+  "devDependencies": {
+    "proxyquire": "^1.8.0"
   }
 }

@@ -18,7 +18,7 @@ conf.app.paths.staticFilesDir
 conf.app.paths.staticFilesPrefix
 -----------------
 contentProvider
-contentProvider.getArticleDirs(['FILES.CONF'], ['EXTS.CONF.JSON', 'EXTS.CONF.YAML'])
+contentProvider.getArticleDirs(['FILES.CONFIG'], ['EXTS.CONFIG.JSON', 'EXTS.CONFIG.YAML'])
 [{
   dirPath: '/news/20170522-nodejs-meetup',
   confFile: 'conf.json',
@@ -72,13 +72,13 @@ const log = bunyan.createLogger({name: 'heyka:article-importer'});
 
 
 const FILES = {
-  CONF: 'conf',
-  BRIEF: 'brief',
-  EXTENDED: 'extended'
+  CONFIG: ['conf', 'config'],
+  BRIEF: 'brief', // TODO: this shouldn't be needed
+  EXTENDED: 'extended' // TODO: this shouldn't be needed
 };
 
 const EXTS = {
-  CONF: {JSON: 'json', YAML: 'yaml'},
+  CONFIG: {JSON: 'json', YAML: 'yaml'},
   BRIEF: {HTML: 'html', MD: 'md'},
   EXTENDED: {HTML: 'html', MD: 'md'}
 };
@@ -86,7 +86,7 @@ const EXTS = {
 const fullImport = function(contentProvider, db, ficb) {
   async.series({
     createTempDir: function(cb) {
-      log.info(`1. Creating temp dir: ${conf.app.paths.tempDir}`);
+      log.info({where: 'fullImport', msg: `1. Creating temp dir: ${conf.app.paths.tempDir}`});
       fse.ensureDir(conf.app.paths.tempDir, cb);
     },
     createStaticFilesDir: function(cb) {
@@ -95,7 +95,13 @@ const fullImport = function(contentProvider, db, ficb) {
       fse.ensureDir(staticFilesDir, cb)
     },
     getArticles: function(cb) {
-      contentProvider.getArticleDirs(['FILES.CONF'], ['EXTS.CONF.JSON', 'EXTS.CONF.YAML']);
+      const exts = Object.keys(EXTS.CONFIG).map(item => EXTS.CONFIG[item]);
+      contentProvider.getArticleDirs(FILES.CONFIG, exts, (err, res) => {
+        if (err) {
+          log.error({where: 'fullImport.getArticles', err: err});
+          // TODO: cancel whole import process
+        }
+      });
     },
     cleanupUnusedStaticDirs: function(cb) {
 
