@@ -22,6 +22,7 @@ contentProvider.getArticleDirs(['FILES.CONFIG'], ['EXTS.CONFIG.JSON', 'EXTS.CONF
 [{
   dirPath: '/news/20170522-nodejs-meetup',
   confFile: 'conf.json',
+  conf: {} //conf object
   staticFiles: ['brief.md', 'extended.md', 'imgs/diagram1.png']
 }]
 contentProvider.getFileStream(path)
@@ -66,10 +67,11 @@ const path = require('path');
 const async = require('async');
 const bunyan = require('bunyan');
 
-const conf = require('conf');
+const conf = require('../config');
+const importArticle = require('./import-article');
+
 
 const log = bunyan.createLogger({name: 'heyka:article-importer'});
-
 
 const FILES = {
   CONFIG: ['conf', 'config'],
@@ -99,17 +101,31 @@ const fullImport = function(contentProvider, db, ficb) {
       contentProvider.getArticleDirs(FILES.CONFIG, exts, (err, res) => {
         if (err) {
           log.error({where: 'fullImport.getArticles', err: err});
+          return cb(err);
           // TODO: cancel whole import process
         }
+        if (res.length === 0) {
+          const noArticlesError = {where: 'fullImport.getArticles', err: "No articles found."};
+          log.error(noArticlesError);
+          return cb(err);
+        }
+        async.eachSeries(res, importArticle(contentProvider, db), iaerr => {
+          if (iaerr) {
+            log.error({where: 'fullImport.getArticles', err: err});
+            return cb(err);
+            // TODO: cancel whole import process
+          }
+          cb();
+        });
       });
     },
     cleanupUnusedStaticDirs: function(cb) {
-
+      // TODO
     }
   }, function(err, res) {
     // full import finished
     if (err) {
-      log.err(err);
+      log.error(err);
       return ficb(err);
     }
     log.info(`Finished old static folders cleaup.`);

@@ -44,10 +44,17 @@ class ContentProviderInterface {
     * @property {Array.<string>} staticFiles The list of static files in the directory
     */
 
-
-
-  getFileStream(filePath, cb) {}
-  getFileAsync(filePath, cb) {}
+  getFileStream(filePath, cb) {
+    const readStream = cp.getFile(filePath);
+    let data = '';
+    readStream.on('data', chunk => {
+      data += chunk;
+    }).on('end', () => {
+      cb(null, data);
+    }).on('error', (err) => {
+      cb(err);
+    });
+  }
 }
 
 module.exports = ContentProviderInterface;
