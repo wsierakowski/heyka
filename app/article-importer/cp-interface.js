@@ -1,23 +1,17 @@
 /** @class Interface for ContentProvider*/
 class ContentProviderInterface {
 
-  /**
-   * @constructor
-   * Create a ContentProvider instance.
-   * @param {string} name - instance name.
-   */
-  constructor(name) {
-    this.name = name;
-  }
+  constructor() {}
 
   /**
+   * @static
    * Get a list of object listing contents of the directories with article files.
    * Directory is taken into consideration when it contains conf file.
    * @param {Array.<String>} confFileNamesList - The list of allowed file names for confing files.
    * @param {Array.<String>} confFileExtsList - The list of allowed file extenstions for confing files.
    * @param {CP~getArticleDirsContentCB} cb - The callback that handles the response.
    */
-  getArticleDirsContent(confFileNamesList, confFileExtsList, cb) {
+  static GetArticleDirsContent(confFileNamesList, confFileExtsList, cb) {
     /* Browse through all directories to identify these with the config file inside.
        For each directory found output the object similar to below:
        [{

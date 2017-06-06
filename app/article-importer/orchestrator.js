@@ -69,9 +69,10 @@ const bunyan = require('bunyan');
 
 const conf = require('../config');
 const importArticle = require('./import-article');
+const validateArticleConf = require('./article-conf-validator');
+const Article = require('./article-doc-class');
 
-
-const log = bunyan.createLogger({name: 'heyka:article-importer'});
+const log = bunyan.createLogger({name: 'heyka:article-importer-orchestrator'});
 
 const FILES = {
   CONFIG: ['conf', 'config'],
@@ -84,50 +85,187 @@ const EXTS = {
   BRIEF: {HTML: 'html', MD: 'md'},
   EXTENDED: {HTML: 'html', MD: 'md'}
 };
+EXTS.CONFIG_LIST: Object.keys(EXTS.CONFIG).map(item => EXTS.CONFIG[item]),
 
-const fullImport = function(contentProvider, db, ficb) {
+// IMPORT PROCESS
+
+const fullImport = function(contentProvider, db, fullImportCb) {
   async.series({
+
     createTempDir: function(cb) {
       log.info({where: 'fullImport', msg: `1. Creating temp dir: ${conf.app.paths.tempDir}`});
       fse.ensureDir(conf.app.paths.tempDir, cb);
     },
+
     createStaticFilesDir: function(cb) {
       const staticFilesDir = conf.app.paths.staticFilesDir + '_' + db.name;
       log.info(`2. Creating static files dir: ${staticFilesDir}`);
       fse.ensureDir(staticFilesDir, cb)
     },
-    getArticles: function(cb) {
-      const exts = Object.keys(EXTS.CONFIG).map(item => EXTS.CONFIG[item]);
-      contentProvider.getArticleDirs(FILES.CONFIG, exts, (err, res) => {
+
+    importArticles: function(cb) {
+      contentProvider.GetArticleConfPaths(FILES.CONFIG, EXTS.CONFIG_LIST, (err, articleConfPaths) => {
         if (err) {
-          log.error({where: 'fullImport.getArticles', err: err});
+          log.error({where: 'fullImport.importArticles', err: err});
           return cb(err);
           // TODO: cancel whole import process
         }
-        if (res.length === 0) {
-          const noArticlesError = {where: 'fullImport.getArticles', err: "No articles found."};
+
+        if (articleConfPaths.length === 0) {
+          const noArticlesError = {where: 'fullImport.importArticles', msg: "No articles found."};
           log.error(noArticlesError);
-          return cb(err);
+          return cb(noArticlesError.msg);
+          // TODO: cancel whole import process
         }
-        async.eachSeries(res, importArticle(contentProvider, db), iaerr => {
-          if (iaerr) {
-            log.error({where: 'fullImport.getArticles', err: err});
-            return cb(err);
+
+        async.eachSeries(articleConfPaths, importArticle, importArticleErr => {
+          if (importArticleErr) {
+            log.error({where: 'fullImport.importArticles', err: importArticleErr});
+            return cb(importArticleErr);
             // TODO: cancel whole import process
           }
           cb();
         });
       });
     },
+
     cleanupUnusedStaticDirs: function(cb) {
       // TODO
     }
+
   }, function(err, res) {
     // full import finished
     if (err) {
       log.error(err);
-      return ficb(err);
+      return fullImportCb(err);
     }
     log.info(`Finished old static folders cleaup.`);
   });
+
+
+
+
+
+
+  // IMPORT SINGLE ARTICLE
+
+  function importArticle(articleConfPath, cb) {
+    const article = new Article();
+    article.dirPath = path.dirname(articleConfPath);
+    article.confFile = path.basename(articleConfPath);
+
+    log.info({where: 'importArticle', msg: `Loading article: ${articleConfPath}.`});
+
+    async.waterfall([
+
+      // articleConfPath, article, cb
+      readParseAndValidateConfFile(cb) {
+        contentProvider.readFile(articleConfPath, (err, confData) => {
+
+          article.config = parseConfFile(confData, path.extname(article.confFile));
+
+          // parse
+          const confExt = path.extname(article.confFile);
+          try {
+            article.config = confExt === `.${EXTS.CONFIG.JSON}` ?
+              JSON.parse(confData) : YAML.parse(confData);
+          } catch(parseError) {
+            return cb({where: 'readAndValidateConfFile', path: articleConfPath, error: parseError});
+          }
+
+          //validate
+          const validateErrors = validateArticleConf(article.config);
+          if (validateErrors.length > 0) {
+            return cb({where: 'validateArticleConfig', path: articleConfPath, error: validateErrors.join('.\n')});
+          }
+
+          cb(null);
+        });
+      },
+
+
+      preprocessAndSkip(cb) {
+        // preprocess
+        if (article.config.published === undefined) {
+          article.config.published = true;
+        }
+        // skip
+        if (!article.config.published) {
+          log.info(`* ArticleImporter: skipping article: "${article.dirPath}" as it is not set to be published.`);
+          // http://stackoverflow.com/questions/15420019/asyncjs-bypass-a-function-in-a-waterfall-chain
+          // https://github.com/caolan/async/pull/85
+          return waterfallCallback(null);
+        }
+
+        // to avoid "RangeError: Maximum call stack size exceeded."
+        async.setImmediate(function() {
+          cb(null);
+        });
+      },
+
+
+      readBriefAndExtended(cb) {
+        async.map([
+          path.join(article.dirPath, article.config.content.brief),
+          path.join(article.dirPath, article.config.content.extended)
+        ],
+        contentProvider.readFile,
+        (err, data) => {
+          if (err) {
+            return cb({where: 'readBriefAndExtended', path: articleConfPath, error: err});
+          }
+          let briefBody = res[0].toString();
+          if (briefExt === '.' + EXTS.BRIEF.HTML) article.brief = briefBody;
+          else if (briefExt === '.' + EXTS.BRIEF.MD) article.brief = marked(briefBody);
+          else return cb({
+            where: 'readBriefAndExtended',
+            path: articleConfPath,
+            error: `Unsupported brief file type ${article.config.content.brief}`}
+          );
+
+          let extendedBody = res[1].toString();
+          if (extendedBody) article.config.content.isExtended = true; // TODO is this necessary
+          if (extendedExt === '.' + EXTS.EXTENDED.HTML) article.extended = extendedBody;
+          else if (extendedExt === '.' + EXTS.EXTENDED.MD) article.extended = marked(extendedBody);
+          else return cb({
+            where: 'readBriefAndExtended',
+            path: articleConfPath,
+            error: `Unsupported extended file type ${article.config.content.extended}`}
+          );
+          cb(null);
+        });
+      },
+
+      // All necessary processing on the articleConf before it is passed to db
+      postprocess(cb) {
+        article._id = article.slug = myUtils.slugify(article.config.title);
+
+        // TODO rething whether we still need to keep almost entire category doc in article
+        // after we changed the way how we query articles by category...
+        articleConf.category = {
+          _id: myUtils.slugify(article.config.category),
+          id: myUtils.slugify(article.config.category),
+          name: myUtils.titlefy(article.config.category)
+        }
+        articleConf.tags = articleConf.tags.map(tag => {
+          return {
+            _id: myUtils.slugify(tag),
+            id: myUtils.slugify(tag),
+            name: myUtils.camelizefy(tag)
+          };
+        });
+
+        // to avoid "RangeError: Maximum call stack size exceeded."
+        async.setImmediate(function() {
+          cb(null);
+        });
+      }
+
+    ], err => {
+      if (err) {
+        return cb(err);
+      }
+      cb();
+    });
+  }
 }

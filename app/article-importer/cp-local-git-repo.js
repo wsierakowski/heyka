@@ -6,11 +6,9 @@ const conf = require('../config');
 const ContentProviderInterface = require('./cp-interface');
 
 class ContentProviderLocalGitRepo extends ContentProviderInterface {
-  constructor(name) {
-    super(name);
-  }
+  constructor() {}
 
-  getArticleDirsContent(confFileNamesList, confFileExtsList, cb) {
+  static GetArticleInfo(confFileNamesList, confFileExtsList, cb) {
     // ?(conf|config)
     const filenames = confFileNamesList.join('|');
 
