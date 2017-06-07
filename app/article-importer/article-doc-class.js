@@ -25,7 +25,6 @@ class Article {
 
     this.tags = null;
     // [{
-    //   _id: myUtils.slugify(tag),
     //   id: myUtils.slugify(tag),
     //   name: myUtils.camelizefy(tag)
     // }]

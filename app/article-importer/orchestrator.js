@@ -90,6 +90,7 @@ EXTS.CONFIG_LIST: Object.keys(EXTS.CONFIG).map(item => EXTS.CONFIG[item]),
 // IMPORT PROCESS
 
 const fullImport = function(contentProvider, db, fullImportCb) {
+
   async.series({
 
     createTempDir: function(cb) {
@@ -144,7 +145,169 @@ const fullImport = function(contentProvider, db, fullImportCb) {
 
 
 
+  // IMPORT ARTICLE STEPS
 
+
+  function readParseAndValidateConfFile(article, cb) {
+    contentProvider.readFile(articleConfPath, (err, confData) => {
+
+      article.config = parseConfFile(confData, path.extname(article.confFile));
+
+      // parse
+      const confExt = path.extname(article.confFile);
+      try {
+        article.config = confExt === `.${EXTS.CONFIG.JSON}` ?
+          JSON.parse(confData) : YAML.parse(confData);
+      } catch(parseError) {
+        return cb({where: 'readAndValidateConfFile', path: articleConfPath, error: parseError});
+      }
+
+      //validate
+      const validateErrors = validateArticleConf(article.config);
+      if (validateErrors.length > 0) {
+        return cb({where: 'validateArticleConfig', path: articleConfPath, error: validateErrors.join('.\n')});
+      }
+
+      cb(null);
+    });
+  }
+
+  function preprocessAndSkip(importArticleCallback) {
+      (article, cb) => {
+      // preprocess
+      if (article.config.published === undefined) {
+        article.config.published = true;
+      }
+      // skip
+      if (!article.config.published) {
+        log.info(`* ArticleImporter: skipping article: "${article.dirPath}" as it is not set to be published.`);
+        // http://stackoverflow.com/questions/15420019/asyncjs-bypass-a-function-in-a-waterfall-chain
+        // https://github.com/caolan/async/pull/85
+        return importArticleWaterfallCallback(importArticleCallback)(null);
+      }
+
+      // to avoid "RangeError: Maximum call stack size exceeded."
+      async.setImmediate(function() {
+        cb(null);
+      });
+    }
+  }
+
+  function readBriefAndExtended(article, cb) {
+    async.map([
+      path.join(article.dirPath, article.config.content.brief),
+      path.join(article.dirPath, article.config.content.extended)
+    ],
+    contentProvider.readFile,
+    (err, data) => {
+      if (err) {
+        return cb({where: 'readBriefAndExtended', path: articleConfPath, error: err});
+      }
+      let briefBody = res[0].toString();
+      if (briefExt === '.' + EXTS.BRIEF.HTML) article.brief = briefBody;
+      else if (briefExt === '.' + EXTS.BRIEF.MD) article.brief = marked(briefBody);
+      else return cb({
+        where: 'readBriefAndExtended',
+        path: articleConfPath,
+        error: `Unsupported brief file type ${article.config.content.brief}`}
+      );
+
+      let extendedBody = res[1].toString();
+      if (extendedBody) article.config.content.isExtended = true; // TODO is this necessary
+      if (extendedExt === '.' + EXTS.EXTENDED.HTML) article.extended = extendedBody;
+      else if (extendedExt === '.' + EXTS.EXTENDED.MD) article.extended = marked(extendedBody);
+      else return cb({
+        where: 'readBriefAndExtended',
+        path: articleConfPath,
+        error: `Unsupported extended file type ${article.config.content.extended}`}
+      );
+      cb(null);
+    });
+  }
+
+  // All necessary processing on the articleConf before it is passed to db
+  function postprocess(article, cb) {
+    article._id = article.slug = myUtils.slugify(article.config.title);
+
+    // TODO rething whether we still need to keep almost entire category doc in article
+    // after we changed the way how we query articles by category...
+    article.category = {
+      id: myUtils.slugify(article.config.category),
+      name: myUtils.titlefy(article.config.category)
+    }
+    article.tags = article.config.tags.map(tag => {
+      return {
+        id: myUtils.slugify(tag),
+        name: myUtils.camelizefy(tag)
+      };
+    });
+
+    // to avoid "RangeError: Maximum call stack size exceeded."
+    async.setImmediate(function() {
+      cb(null);
+    });
+  }
+
+  function insertArticlesToDB(article, cb) {
+    async.series([
+      function pushArticle(icb) {
+        db.create(db.col.ARTICLES, article, (err, doc) => {
+          if (err) return icb({where: 'insertArticlesToDB', path: articleConfPath, error: err});
+          icb(null);
+        });
+      },
+      function pushCategory(icb) {
+        // TODO: Do we really need a separate category collection?
+        // Upsert category...
+        // if category exists, append article to list of articles
+        // otherwise create a new doc
+        db.upsert(
+          db.col.CATEGORIES,
+          article.category.id, {
+            id: article.category.id,
+            name: article.category.name,
+            articles: [article.id]
+          }, (err, res) => {
+            if (err) return icb({where: 'pushCategory', path: articleConfPath, error: err});
+            icb(null);
+          });
+      },
+      function pushTags(icb) {
+        // Upsert tags...
+        async.eachLimit(article.tags, 1,
+          function pushTagsIteratee(tag, tagCallback) {
+            db.upsert(
+              db.col.TAGS,
+              tag.id, {
+                id: tag.id,
+                name: tag.name,
+                articles: [article.id]
+              }, (err, res) => {
+                if (err) return tagCallback({tag: tag, error: err});
+                tagCallback(null);
+              }
+            );
+          },
+          function pushTagsCallback(pushTagsErr) {
+            if (pushTagsErr) return icb({where: 'pushTags', path: articleConfPath, error: pushTagsErr});
+            icb(null);
+          }
+        );
+      }
+    ], function insertArticleSeriesCallback(pushArticleErr, pushArticleRes) {
+      if (pushArticleErr) return cb({where: 'pushArticle', path: articleConfPath, error: pushArticleErr});
+      cb(null);
+    });
+  }
+
+  function importArticleWaterfallCallback(cb) {
+    return err => {
+      if (err) {
+        return cb(err);
+      }
+      cb(null);
+    };
+  })
 
 
   // IMPORT SINGLE ARTICLE
@@ -157,115 +320,13 @@ const fullImport = function(contentProvider, db, fullImportCb) {
     log.info({where: 'importArticle', msg: `Loading article: ${articleConfPath}.`});
 
     async.waterfall([
-
-      // articleConfPath, article, cb
-      readParseAndValidateConfFile(cb) {
-        contentProvider.readFile(articleConfPath, (err, confData) => {
-
-          article.config = parseConfFile(confData, path.extname(article.confFile));
-
-          // parse
-          const confExt = path.extname(article.confFile);
-          try {
-            article.config = confExt === `.${EXTS.CONFIG.JSON}` ?
-              JSON.parse(confData) : YAML.parse(confData);
-          } catch(parseError) {
-            return cb({where: 'readAndValidateConfFile', path: articleConfPath, error: parseError});
-          }
-
-          //validate
-          const validateErrors = validateArticleConf(article.config);
-          if (validateErrors.length > 0) {
-            return cb({where: 'validateArticleConfig', path: articleConfPath, error: validateErrors.join('.\n')});
-          }
-
-          cb(null);
-        });
-      },
-
-
-      preprocessAndSkip(cb) {
-        // preprocess
-        if (article.config.published === undefined) {
-          article.config.published = true;
-        }
-        // skip
-        if (!article.config.published) {
-          log.info(`* ArticleImporter: skipping article: "${article.dirPath}" as it is not set to be published.`);
-          // http://stackoverflow.com/questions/15420019/asyncjs-bypass-a-function-in-a-waterfall-chain
-          // https://github.com/caolan/async/pull/85
-          return waterfallCallback(null);
-        }
-
-        // to avoid "RangeError: Maximum call stack size exceeded."
-        async.setImmediate(function() {
-          cb(null);
-        });
-      },
-
-
-      readBriefAndExtended(cb) {
-        async.map([
-          path.join(article.dirPath, article.config.content.brief),
-          path.join(article.dirPath, article.config.content.extended)
-        ],
-        contentProvider.readFile,
-        (err, data) => {
-          if (err) {
-            return cb({where: 'readBriefAndExtended', path: articleConfPath, error: err});
-          }
-          let briefBody = res[0].toString();
-          if (briefExt === '.' + EXTS.BRIEF.HTML) article.brief = briefBody;
-          else if (briefExt === '.' + EXTS.BRIEF.MD) article.brief = marked(briefBody);
-          else return cb({
-            where: 'readBriefAndExtended',
-            path: articleConfPath,
-            error: `Unsupported brief file type ${article.config.content.brief}`}
-          );
-
-          let extendedBody = res[1].toString();
-          if (extendedBody) article.config.content.isExtended = true; // TODO is this necessary
-          if (extendedExt === '.' + EXTS.EXTENDED.HTML) article.extended = extendedBody;
-          else if (extendedExt === '.' + EXTS.EXTENDED.MD) article.extended = marked(extendedBody);
-          else return cb({
-            where: 'readBriefAndExtended',
-            path: articleConfPath,
-            error: `Unsupported extended file type ${article.config.content.extended}`}
-          );
-          cb(null);
-        });
-      },
-
+      wcb => wcb(null, article),
+      readParseAndValidateConfFile,
+      preprocessAndSkip(cb),
+      readBriefAndExtended,
       // All necessary processing on the articleConf before it is passed to db
-      postprocess(cb) {
-        article._id = article.slug = myUtils.slugify(article.config.title);
-
-        // TODO rething whether we still need to keep almost entire category doc in article
-        // after we changed the way how we query articles by category...
-        articleConf.category = {
-          _id: myUtils.slugify(article.config.category),
-          id: myUtils.slugify(article.config.category),
-          name: myUtils.titlefy(article.config.category)
-        }
-        articleConf.tags = articleConf.tags.map(tag => {
-          return {
-            _id: myUtils.slugify(tag),
-            id: myUtils.slugify(tag),
-            name: myUtils.camelizefy(tag)
-          };
-        });
-
-        // to avoid "RangeError: Maximum call stack size exceeded."
-        async.setImmediate(function() {
-          cb(null);
-        });
-      }
-
-    ], err => {
-      if (err) {
-        return cb(err);
-      }
-      cb();
-    });
+      postprocess,
+      insertArticlesToDB
+    ], importArticleWaterfallCallback(cb));
   }
 }
