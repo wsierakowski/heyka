@@ -1,54 +1,94 @@
 /** @class Interface for ContentProvider*/
 class ContentProviderInterface {
 
-  constructor() {}
+  constructor(rootPath) {
+    this.rootPath = rootPath;
+  }
+
+  //----------------------------------------------------------------------------
+  // getPathsToFiles
+  //----------------------------------------------------------------------------
 
   /**
-   * @static
-   * Get a list of object listing contents of the directories with article files.
-   * Directory is taken into consideration when it contains conf file.
-   * @param {Array.<String>} confFileNamesList - The list of allowed file names for confing files.
-   * @param {Array.<String>} confFileExtsList - The list of allowed file extenstions for confing files.
-   * @param {CP~getArticleDirsContentCB} cb - The callback that handles the response.
+   * Get a list of paths for the directories with article files.
+   * @param {String} dir - The relative directory path in which the search should be performed, null for root
+   * (relative to the path provided in the constructor)
+   * @param {Array.<String>} fileNamesList - The list of allowed file names for confing files, null for *.
+   * @param {Array.<String>} fileExtsList - The list of allowed file extenstions for confing files, null for .*.
+   * @param {CP~getPathsToFilesCB} cb - The callback that handles the response.
    */
-  static GetArticleDirsContent(confFileNamesList, confFileExtsList, cb) {
+  getPathsToFiles(dir, fileNamesList, fileExtsList, cb) {
     /* Browse through all directories to identify these with the config file inside.
-       For each directory found output the object similar to below:
-       [{
-         dirPath: '/news/20170522-nodejs-meetup',
-         confFile: 'conf.json',
-         staticFiles: ['brief.md', 'extended.md', 'imgs/diagram1.png']
-       }]
+       Use this.rootPath as a root.
+       For local file system you can use glob.
+       For each directory found output the path
+       ['/news/20170522-nodejs-meetup/conf.json']
     */
   }
 
   /**
-   * This callback is displayed as part of the Requester class.
-   * @callback CP~getArticleDirsContentCB
+   * @callback CP~getPathsToFilesCB
    * @param {error}
    *        An Error or null
-   * @param {ListOfArticleDirContent}
-   *        A list of objects representing article directory structure
+   * @param {Array.<String>}
+   *        A list of paths to config files
    */
 
-   /**
-    * @typedef {Array.<Object>} ListOfArticleDirContent
-    * @property {string} dirPath Path to the article directory
-    * @property {string} confFile The configuration file name
-    * @property {Array.<string>} staticFiles The list of static files in the directory
-    */
 
-  getFileStream(filePath, cb) {
-    const readStream = cp.getFile(filePath);
-    let data = '';
-    readStream.on('data', chunk => {
-      data += chunk;
-    }).on('end', () => {
-      cb(null, data);
-    }).on('error', (err) => {
-      cb(err);
-    });
+
+   //----------------------------------------------------------------------------
+   // readFile
+   //----------------------------------------------------------------------------
+
+   /**
+    * Read file, local or remote.
+    * @param {String} filePath - The relative file path
+    * @param {CP~readFileCB} cb - The callback that handles the response.
+    */
+  readFile(filePath, cb) {
+    // Use this.rootPath as a root.
+
+    // const readStream = cp.getFile(filePath);
+    // let data = '';
+    // readStream.on('data', chunk => {
+    //   data += chunk;
+    //   }).on('end', () => {
+    //     cb(null, data);
+    //   }).on('error', (err) => {
+    //     cb(err);
+    //   });
+    // }
   }
+
+  /**
+   * @callback CP~readFileCB
+   * @param {error}
+   *        An Error or null
+   * @param {String}
+   *        File contents
+   */
+
+
+
+   //----------------------------------------------------------------------------
+   // copyFile
+   //----------------------------------------------------------------------------
+
+   /**
+    * Read file, local or remote.
+    * @param {String} sourcePath - The relative path to the source file
+    * @param {String} destinationPath - The absolute path to the target file
+    * @param {CP~copyFileCB} cb - The callback that handles the response.
+    */
+  copyFile(sourcePath, destinationPath, cb) {
+    // Use this.rootPath as a root.
+  }
+
+  /**
+   * @callback CP~copyFileCB
+   * @param {error}
+   *        An Error or null
+   */
 }
 
 module.exports = ContentProviderInterface;

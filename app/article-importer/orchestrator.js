@@ -89,6 +89,7 @@ EXTS.CONFIG_LIST: Object.keys(EXTS.CONFIG).map(item => EXTS.CONFIG[item]),
 
 // IMPORT PROCESS
 
+// contentProvider = new ContentProvider('pathToRootDirectory');
 const fullImport = function(contentProvider, db, fullImportCb) {
 
   async.series({
@@ -105,7 +106,7 @@ const fullImport = function(contentProvider, db, fullImportCb) {
     },
 
     importArticles: function(cb) {
-      contentProvider.GetArticleConfPaths(FILES.CONFIG, EXTS.CONFIG_LIST, (err, articleConfPaths) => {
+      contentProvider.getPathsToFiles(null, FILES.CONFIG, EXTS.CONFIG_LIST, (err, articleConfPaths) => {
         if (err) {
           log.error({where: 'fullImport.importArticles', err: err});
           return cb(err);
@@ -143,7 +144,25 @@ const fullImport = function(contentProvider, db, fullImportCb) {
     log.info(`Finished old static folders cleaup.`);
   });
 
+  // IMPORT SINGLE ARTICLE
 
+  function importArticle(articleConfPath, cb) {
+    const article = new Article();
+    article.dirPath = path.dirname(articleConfPath);
+    article.confFile = path.basename(articleConfPath);
+
+    log.info({where: 'importArticle', msg: `Loading article: ${articleConfPath}.`});
+
+    async.waterfall([
+      wcb => wcb(null, article),
+      readParseAndValidateConfFile,
+      preprocessAndSkip(cb),
+      readBriefAndExtended,
+      // All necessary processing on the articleConf before it is passed to db
+      postprocess,
+      insertArticlesToDB
+    ], importArticleWaterfallCallback(cb));
+  }
 
   // IMPORT ARTICLE STEPS
 
@@ -159,13 +178,13 @@ const fullImport = function(contentProvider, db, fullImportCb) {
         article.config = confExt === `.${EXTS.CONFIG.JSON}` ?
           JSON.parse(confData) : YAML.parse(confData);
       } catch(parseError) {
-        return cb({where: 'readAndValidateConfFile', path: articleConfPath, error: parseError});
+        return cb({where: 'readAndValidateConfFile', path: article.dirPath, error: parseError});
       }
 
       //validate
       const validateErrors = validateArticleConf(article.config);
       if (validateErrors.length > 0) {
-        return cb({where: 'validateArticleConfig', path: articleConfPath, error: validateErrors.join('.\n')});
+        return cb({where: 'validateArticleConfig', path: article.dirPath, error: validateErrors.join('.\n')});
       }
 
       cb(null);
@@ -201,14 +220,14 @@ const fullImport = function(contentProvider, db, fullImportCb) {
     contentProvider.readFile,
     (err, data) => {
       if (err) {
-        return cb({where: 'readBriefAndExtended', path: articleConfPath, error: err});
+        return cb({where: 'readBriefAndExtended', path: article.dirPath, error: err});
       }
       let briefBody = res[0].toString();
       if (briefExt === '.' + EXTS.BRIEF.HTML) article.brief = briefBody;
       else if (briefExt === '.' + EXTS.BRIEF.MD) article.brief = marked(briefBody);
       else return cb({
         where: 'readBriefAndExtended',
-        path: articleConfPath,
+        path: article.dirPath,
         error: `Unsupported brief file type ${article.config.content.brief}`}
       );
 
@@ -218,7 +237,7 @@ const fullImport = function(contentProvider, db, fullImportCb) {
       else if (extendedExt === '.' + EXTS.EXTENDED.MD) article.extended = marked(extendedBody);
       else return cb({
         where: 'readBriefAndExtended',
-        path: articleConfPath,
+        path: article.dirPath,
         error: `Unsupported extended file type ${article.config.content.extended}`}
       );
       cb(null);
@@ -252,7 +271,7 @@ const fullImport = function(contentProvider, db, fullImportCb) {
     async.series([
       function pushArticle(icb) {
         db.create(db.col.ARTICLES, article, (err, doc) => {
-          if (err) return icb({where: 'insertArticlesToDB', path: articleConfPath, error: err});
+          if (err) return icb({where: 'insertArticlesToDB', path: article.dirPath, error: err});
           icb(null);
         });
       },
@@ -268,7 +287,7 @@ const fullImport = function(contentProvider, db, fullImportCb) {
             name: article.category.name,
             articles: [article.id]
           }, (err, res) => {
-            if (err) return icb({where: 'pushCategory', path: articleConfPath, error: err});
+            if (err) return icb({where: 'pushCategory', path: article.dirPath, error: err});
             icb(null);
           });
       },
@@ -289,14 +308,66 @@ const fullImport = function(contentProvider, db, fullImportCb) {
             );
           },
           function pushTagsCallback(pushTagsErr) {
-            if (pushTagsErr) return icb({where: 'pushTags', path: articleConfPath, error: pushTagsErr});
+            if (pushTagsErr) return icb({where: 'pushTags', path: article.dirPath, error: pushTagsErr});
             icb(null);
           }
         );
       }
     ], function insertArticleSeriesCallback(pushArticleErr, pushArticleRes) {
-      if (pushArticleErr) return cb({where: 'pushArticle', path: articleConfPath, error: pushArticleErr});
+      if (pushArticleErr) return cb({where: 'pushArticle', path: article.dirPath, error: pushArticleErr});
       cb(null);
+    });
+  }
+
+  function copyStaticFiles(cb) {
+    contentProvider.getPathsToFiles(article.dirPath, null, null, (err, filePaths) => {
+      if (err) return cb({where: 'copyStaticFiles', path: article.dirPath, error: pushArticleErr});
+
+      // remove articleConf, brief and extended files
+      const articleSpecificFiles = [
+        path.join(article.dirPath, article.confFile),
+        path.join(article.dirPath, article.content.brief),
+        path.join(article.dirPath, article.content.extended)
+      ];
+
+      const articleStaticFiles = filePaths.filter(filePath => {
+        return !articleSpecificFiles.some(articleFile => articleFile === filePath);
+      });
+
+      if (!articleStaticFiles.length) return cb(null);
+
+      // here we have a list of all dirs with articleConf files!
+      log.info({where: "importArticle.copyStaticFiles", msg: `articleStaticFiles for "${articlePath}": ${articleStaticFiles}`});
+
+      const targetArticlePath = path.join(conf.app.paths.staticFilesDir + '_' + db.name, article.category.id, article.id);
+
+      // Copy each file to a respective folder
+      async.eachSeries(articleStaticFiles,
+        function copyStaticFilesInArticle(filePath, copyStaticFileCb) {
+
+          ///Users/wsierak/Projects/learning/heyka/_sample-db-local-repo/tips/2017-03-06_testing-articles-with-images/assets/large_img1.jpg
+          ///Users/wsierak/Projects/learning/heyka/_sample-db-local-repo/tips/2017-03-06_testing-articles-with-images/brief.html
+
+          const fileDir = path.relative(article.dirPath, path.dirname(filePath));
+          //debugger;
+          const targetPath = path.join(targetArticlePath, fileDir, path.basename(filePath));
+
+          contentProvider.copyFile(filePath, targetPath, fileCpErr => {
+            if (fileCpErr) return copyStaticFileCb(fileCpErr);
+            copyStaticFileCb(null);
+          });
+        }, function copyStaticFilesForArticleCallback(copyStaticFilesErr, res) {
+          if (copyStaticFilesErr) {
+            // One of the iterations produced an error.
+            // All processing will now stop.
+            const msg = {where: 'copyStaticFiles', error: `Error copying files for "${articlePath}": ${copyStaticFilesErr}.`};
+            log.error(msg);
+            return cb(msg)
+          }
+          console.log(`All files static files for ${articlePath} have been copied successfully.`);
+          cb(null);
+      });
+
     });
   }
 
@@ -308,25 +379,4 @@ const fullImport = function(contentProvider, db, fullImportCb) {
       cb(null);
     };
   })
-
-
-  // IMPORT SINGLE ARTICLE
-
-  function importArticle(articleConfPath, cb) {
-    const article = new Article();
-    article.dirPath = path.dirname(articleConfPath);
-    article.confFile = path.basename(articleConfPath);
-
-    log.info({where: 'importArticle', msg: `Loading article: ${articleConfPath}.`});
-
-    async.waterfall([
-      wcb => wcb(null, article),
-      readParseAndValidateConfFile,
-      preprocessAndSkip(cb),
-      readBriefAndExtended,
-      // All necessary processing on the articleConf before it is passed to db
-      postprocess,
-      insertArticlesToDB
-    ], importArticleWaterfallCallback(cb));
-  }
 }
