@@ -14,16 +14,16 @@ class ContentProviderLocalGitRepo extends ContentProviderInterface {
     // ?(conf|config)
 
     let filenames = fileNamesList === null ? '*' : fileNamesList;
-    filenames = Array.isArray(filenames) ? filenames.join('|') : filenames;
+    filenames = Array.isArray(filenames) ? `?(${filenames.join('|')})` : filenames;
 
     // .{json,yaml}
     let exts = fileExtsList === null ? '*' : fileExtsList;
-    exts = Array.isArray(exts) ? exts.join(',') : exts;
+    exts = Array.isArray(exts) ? `{${exts.join(',')}}` : exts;
 
     const root = dir ? path.join(this.rootPath, dir) : this.rootPath;
 
-    const globPath = path.join(root, '**', `?(${filenames})`) + `.{${exts}}`;
-
+    const globPath = path.join(root, '**', filenames + `.${exts}`);
+    console.log('-------globPath', globPath);
     // 1. Search through all directories and identify those that have conf files.
     glob(globPath, (gperr, confPaths) => {
       if (gperr) return cb(gperr);
@@ -57,9 +57,9 @@ class ContentProviderLocalGitRepo extends ContentProviderInterface {
 
   readFile(filePath, cb) {
     // doing streams here just as an excercise...
-    const path = path.join(this.rootPath, filePath);
+    const fpath = path.join(this.rootPath, filePath);
     let content = '';
-    fse.createReadStream(path)
+    fse.createReadStream(fpath)
       .on('data', chunk => content += chunk)
       .once('end', () => cb(null, content))
       .once('error', err => cb(err));
@@ -71,11 +71,12 @@ class ContentProviderLocalGitRepo extends ContentProviderInterface {
     const rs = fse.createReadStream(spath);
     const ws = fse.createWriteStream(destinationPath);
 
-    rs.
-      once('end', () => cb(null))
-      once('error', err => cb(err));
+    rs
+      .once('end', () => cb(null))
+      .once('error', err => cb(err));
 
     rs.pipe(ws);
+    cb(null);
   }
 }
 
