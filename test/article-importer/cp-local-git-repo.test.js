@@ -71,30 +71,24 @@ if(1)
 test('contentProvider.copyFile should copy content of a file to a destination', function(t) {
   const fileToRead = require('./cp-local-git-repo.fixture.js').sampleConfigFile;
   const cp = new CPLocalGitRepo(confStub.app.paths.localRepoDir);
+  const destPath = './somepath';
+  let pipedFile = '';
 
+  //https://stackoverflow.com/questions/21491567/how-to-implement-a-writable-stream
   const ws = new stream.Writable();
   ws._write = (chunk, encoding, done) => {
-    console.log('This is what i got: ', chunk.toString());
+    pipedFile += chunk.toString();
     done();
   };
-  fsStub.createWriteStream = function(){return ws};
 
-  cp.copyFile(fileToRead.filePath, './somepath', (err) => {
+  fsStub.createWriteStream = (filePath) => {
+    t.equal(filePath, destPath);
+    return ws;
+  };
 
-    t.equal(true, true);
+  cp.copyFile(fileToRead.filePath, destPath, (err) => {
+    //console.log('____2. This is what i got: ', pipedFile);
+    t.deepEqual(JSON.parse(fileToRead.fileContent), JSON.parse(pipedFile));
     t.end();
   });
 });
-
-// ///////////////////////////
-//
-// var stream = require('stream');
-// var echoStream = new stream.Writable();
-// echoStream._write = function (chunk, encoding, done) {
-//   console.log(chunk.toString());
-//   done();
-// };
-//
-// process.stdin.pipe(echoStream);
-// const fsStub = {};
-// //////////////////////////

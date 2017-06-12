@@ -23,7 +23,7 @@ class ContentProviderLocalGitRepo extends ContentProviderInterface {
     const root = dir ? path.join(this.rootPath, dir) : this.rootPath;
 
     const globPath = path.join(root, '**', filenames + `.${exts}`);
-    console.log('-------globPath', globPath);
+    //console.log('-------globPath', globPath);
     // 1. Search through all directories and identify those that have conf files.
     glob(globPath, (gperr, confPaths) => {
       if (gperr) return cb(gperr);
@@ -76,7 +76,6 @@ class ContentProviderLocalGitRepo extends ContentProviderInterface {
       .once('error', err => cb(err));
 
     rs.pipe(ws);
-    cb(null);
   }
 }
 
