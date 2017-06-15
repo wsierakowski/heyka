@@ -13,6 +13,17 @@ const RUNNING = 2;
 const UPDATING = 3;
 var modelStatus = NOT_INITIALISED;
 
+//////////////////////////////////
+// 20170612 testing article importer orchestrator
+//////////////////////////////////
+const path = require('path');
+const conf = require('../config');
+const orchestrator = require('../article-importer/orchestrator');
+const CPLocalGitRepo = require('../article-importer/cp-local-git-repo');
+const cp = new CPLocalGitRepo(path.join(__dirname, '../../test/_sample-articles'));
+
+//////////////////////////////////
+
 class Model {
   constructor() {}
 
@@ -24,7 +35,10 @@ class Model {
     //blogDB.init(cb);
     dbPool.getNextDb((poolErr, db) => {
       if (poolErr) return cb(poolErr);
-      articleImporter.initialImport(db, importErr => {
+      //////////////////////// 20170612
+      //articleImporter.initialImport(db, importErr => {
+      orchestrator.fullImport(cp, db, importErr => {
+      ////////////////////////
         if (importErr) return cb(importErr);
         dbPool.swapDb(swapErr => {
           if (swapErr) return cb(swapErr);

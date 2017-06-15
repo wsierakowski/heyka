@@ -1,7 +1,6 @@
 /*
 
 db, cb
-
 -----------------
 db
 db.name
@@ -59,16 +58,17 @@ contentProvider.getFileAsync(path)
 5. Finish
 
 -----------------
-
 */
 
 const fse = require('fs-extra');
 const path = require('path');
 const async = require('async');
 const bunyan = require('bunyan');
+const marked = require('marked');
 
 const conf = require('../config');
-const importArticle = require('./import-article');
+const myUtils = require('../libs/my-utils');
+// remove it // const importArticle = require('./import-article');
 const validateArticleConf = require('./article-conf-validator');
 const Article = require('./article-doc-class');
 
@@ -85,13 +85,13 @@ const EXTS = {
   BRIEF: {HTML: 'html', MD: 'md'},
   EXTENDED: {HTML: 'html', MD: 'md'}
 };
-EXTS.CONFIG_LIST: Object.keys(EXTS.CONFIG).map(item => EXTS.CONFIG[item]),
+EXTS.CONFIG_LIST = Object.keys(EXTS.CONFIG).map(item => EXTS.CONFIG[item]);
 
 // IMPORT PROCESS
 
 // contentProvider = new ContentProvider('pathToRootDirectory');
-const fullImport = function(contentProvider, db, fullImportCb) {
-
+module.exports.fullImport = function(contentProvider, db, fullImportCb) {
+  debugger;
   async.series({
 
     createTempDir: function(cb) {
@@ -156,22 +156,20 @@ const fullImport = function(contentProvider, db, fullImportCb) {
     async.waterfall([
       wcb => wcb(null, article),
       readParseAndValidateConfFile,
-      preprocessAndSkip(cb),
+      (iarticle, icb) => preprocessAndSkip(getImportArticleWaterfallCallback(cb))(iarticle, icb),
       readBriefAndExtended,
       // All necessary processing on the articleConf before it is passed to db
       postprocess,
       insertArticlesToDB
-    ], importArticleWaterfallCallback(cb));
+    ], getImportArticleWaterfallCallback(cb));
   }
 
   // IMPORT ARTICLE STEPS
 
 
   function readParseAndValidateConfFile(article, cb) {
+    const articleConfPath = path.join(article.dirPath, article.confFile);
     contentProvider.readFile(articleConfPath, (err, confData) => {
-
-      article.config = parseConfFile(confData, path.extname(article.confFile));
-
       // parse
       const confExt = path.extname(article.confFile);
       try {
@@ -187,12 +185,13 @@ const fullImport = function(contentProvider, db, fullImportCb) {
         return cb({where: 'validateArticleConfig', path: article.dirPath, error: validateErrors.join('.\n')});
       }
 
-      cb(null);
+      cb(null, article);
     });
   }
 
-  function preprocessAndSkip(importArticleCallback) {
-      (article, cb) => {
+  function preprocessAndSkip(importArticleWaterfallCallback) {
+    //debugger
+    return (article, cb) => {
       // preprocess
       if (article.config.published === undefined) {
         article.config.published = true;
@@ -202,46 +201,50 @@ const fullImport = function(contentProvider, db, fullImportCb) {
         log.info(`* ArticleImporter: skipping article: "${article.dirPath}" as it is not set to be published.`);
         // http://stackoverflow.com/questions/15420019/asyncjs-bypass-a-function-in-a-waterfall-chain
         // https://github.com/caolan/async/pull/85
-        return importArticleWaterfallCallback(importArticleCallback)(null);
+        return importArticleWaterfallCallback(null);
       }
 
       // to avoid "RangeError: Maximum call stack size exceeded."
       async.setImmediate(function() {
-        cb(null);
+        cb(null, article);
       });
-    }
+    };
   }
 
   function readBriefAndExtended(article, cb) {
+    const briefExt = path.extname(article.config.content.brief).toLowerCase();
+    const extendedExt = path.extname(article.config.content.extended).toLowerCase();
     async.map([
-      path.join(article.dirPath, article.config.content.brief),
-      path.join(article.dirPath, article.config.content.extended)
-    ],
-    contentProvider.readFile,
-    (err, data) => {
-      if (err) {
-        return cb({where: 'readBriefAndExtended', path: article.dirPath, error: err});
-      }
-      let briefBody = res[0].toString();
-      if (briefExt === '.' + EXTS.BRIEF.HTML) article.brief = briefBody;
-      else if (briefExt === '.' + EXTS.BRIEF.MD) article.brief = marked(briefBody);
-      else return cb({
-        where: 'readBriefAndExtended',
-        path: article.dirPath,
-        error: `Unsupported brief file type ${article.config.content.brief}`}
-      );
+        path.join(article.dirPath, article.config.content.brief),
+        path.join(article.dirPath, article.config.content.extended)
+      ],
+      // to make sure readfile is bound to the contentProvider.this not async.this
+      (file, icb) => contentProvider.readFile(file, icb),
+      (err, data) => {
+        if (err) {
+          return cb({where: 'readBriefAndExtended', path: article.dirPath, error: err});
+        }
+        let briefBody = data[0].toString();
+        if (briefExt === '.' + EXTS.BRIEF.HTML) article.brief = briefBody;
+        else if (briefExt === '.' + EXTS.BRIEF.MD) article.brief = marked(briefBody);
+        else return cb({
+          where: 'readBriefAndExtended',
+          path: article.dirPath,
+          error: `Unsupported brief file type ${article.config.content.brief}`}
+        );
 
-      let extendedBody = res[1].toString();
-      if (extendedBody) article.config.content.isExtended = true; // TODO is this necessary
-      if (extendedExt === '.' + EXTS.EXTENDED.HTML) article.extended = extendedBody;
-      else if (extendedExt === '.' + EXTS.EXTENDED.MD) article.extended = marked(extendedBody);
-      else return cb({
-        where: 'readBriefAndExtended',
-        path: article.dirPath,
-        error: `Unsupported extended file type ${article.config.content.extended}`}
-      );
-      cb(null);
-    });
+        let extendedBody = data[1].toString();
+        if (extendedBody) article.config.content.isExtended = true; // TODO is this necessary
+        if (extendedExt === '.' + EXTS.EXTENDED.HTML) article.extended = extendedBody;
+        else if (extendedExt === '.' + EXTS.EXTENDED.MD) article.extended = marked(extendedBody);
+        else return cb({
+          where: 'readBriefAndExtended',
+          path: article.dirPath,
+          error: `Unsupported extended file type ${article.config.content.extended}`}
+        );
+        cb(null, article);
+      }
+    );
   }
 
   // All necessary processing on the articleConf before it is passed to db
@@ -315,7 +318,7 @@ const fullImport = function(contentProvider, db, fullImportCb) {
       }
     ], function insertArticleSeriesCallback(pushArticleErr, pushArticleRes) {
       if (pushArticleErr) return cb({where: 'pushArticle', path: article.dirPath, error: pushArticleErr});
-      cb(null);
+      cb(null, article);
     });
   }
 
@@ -365,18 +368,18 @@ const fullImport = function(contentProvider, db, fullImportCb) {
             return cb(msg)
           }
           console.log(`All files static files for ${articlePath} have been copied successfully.`);
-          cb(null);
+          cb(null, article);
       });
 
     });
   }
 
-  function importArticleWaterfallCallback(cb) {
+  function getImportArticleWaterfallCallback(cb) {
     return err => {
       if (err) {
         return cb(err);
       }
       cb(null);
     };
-  })
+  }
 }
