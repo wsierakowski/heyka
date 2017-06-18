@@ -132,6 +132,7 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
     },
 
     cleanupUnusedStaticDirs: function(cb) {
+      cb(null);
       // TODO
     }
 
@@ -142,6 +143,7 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
       return fullImportCb(err);
     }
     log.info(`Finished old static folders cleaup.`);
+    fullImportCb();
   });
 
   // IMPORT SINGLE ARTICLE
@@ -266,7 +268,7 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
 
     // to avoid "RangeError: Maximum call stack size exceeded."
     async.setImmediate(function() {
-      cb(null);
+      cb(null, article);
     });
   }
 
