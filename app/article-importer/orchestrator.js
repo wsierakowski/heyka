@@ -94,6 +94,7 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
   debugger;
   async.series({
 
+    // TODO is article importer best place to create temp dir?
     createTempDir: function(cb) {
       log.info({where: 'fullImport', msg: `1. Creating temp dir: ${conf.app.paths.tempDir}`});
       fse.ensureDir(conf.app.paths.tempDir, cb);

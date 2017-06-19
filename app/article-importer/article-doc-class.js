@@ -11,8 +11,8 @@ class Article {
     //this.config.content.isExtended = true/false;
     //this.config.title = 'article title';
 
-    this.brief = null;         //  'html/md'
-    this.extended = null;      //  'html/md'
+    this.brief = null;         //  string with html
+    this.extended = null;      //  string with html
 
     this.id = null;            //  'slug-and-id-are-the-same'
     this.slug = null;
