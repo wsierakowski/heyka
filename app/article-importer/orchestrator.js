@@ -61,6 +61,7 @@ contentProvider.getFileAsync(path)
 */
 
 const fse = require('fs-extra');
+const glob = require('glob');
 const path = require('path');
 const async = require('async');
 const bunyan = require('bunyan');
@@ -133,8 +134,32 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
     },
 
     cleanupUnusedStaticDirs: function(cb) {
-      cb(null);
-      // TODO
+      glob(conf.app.paths.staticFilesPrefix + '*', (oldStaticGlobErr, oldStaticPaths) => {
+        oldStaticPaths = oldStaticPaths.filter(staticPath => staticPath !== conf.app.paths.staticFilesDir + '_' + db.name);
+        console.log('Paths for removal: ', oldStaticPaths);
+        cb(null);
+        // we don't want to initialise new static router after folder is removed as otherwise
+        // for that brief moment when files are deleted users will not be able to fetch files...
+        // async.everySeries doesn't work for some weird reason
+        async.every(oldStaticPaths, (filePath, removeCb) => {
+            fse.remove(filePath, function(removeErr) {
+              if (removeErr) {
+                return removeCb(removeErr);
+              }
+              removeCb(null);
+            });
+          }, (removeSeriesErr, result) => {
+            log.info({
+              where: 'fullImport.importArticles',
+              msg: '* ArticleImporter: Finished old static folders cleanup.'
+            });
+            // if (removeSeriesErr) {
+            //   return cb(removeSeriesErr);
+            // }
+            // cb(null);
+          }
+        );
+      });
     }
 
   }, function(err, res) {
@@ -147,7 +172,12 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
     fullImportCb();
   });
 
+
+  // ///////////////////////////////////////////////////////////////////////////
+  //
   // IMPORT SINGLE ARTICLE
+  //
+  // ///////////////////////////////////////////////////////////////////////////
 
   function importArticle(articleConfPath, cb) {
     const article = new Article();
@@ -341,15 +371,10 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
     contentProvider.getPathsToFiles(article.dirPath, null, null, (err, filePaths) => {
       if (err) return cb({where: 'copyStaticFiles', path: article.dirPath, error: pushArticleErr});
 
-      // remove articleConf, brief and extended files
+      // leave out articleConf, brief and extended files
       const articleSpecificFiles = [
         article.confFile, article.config.content.brief, article.config.content.extended
       ];
-      // const articleSpecificFiles = [
-      //   path.join(article.dirPath, article.confFile),
-      //   path.join(article.dirPath, article.config.content.brief),
-      //   path.join(article.dirPath, article.config.content.extended)
-      // ];
 
       const articleStaticFiles = filePaths.filter(filePath => {
         return !articleSpecificFiles.some(articleFile => articleFile === filePath);
@@ -389,7 +414,6 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
           console.log(`All files static files for ${article.dirPath} have been copied successfully.`);
           cb(null, article);
       });
-
     });
   }
 
