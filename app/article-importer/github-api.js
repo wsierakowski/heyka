@@ -2,20 +2,32 @@
 //https://github.com/philschatz/octokat.js/tree/master/examples
 //https://developer.github.com/v3/git/trees/#get-a-tree
 
+const Octokat = require('octokat');
+
 const octo1 = new Octokat();
 const repo1 = octo1.repos('wsierakowski', 'demo-content');
 
 // get tree recursively
-repo1.git.trees('master?recursive=1').read((err, res) => {if (err) {return console.log('err:', err);} console.log(res);})
+repo1.git.trees('master?recursive=1').read((err, res) => {
+  if (err) {
+    return console.log('err:', err);
+  }
+  console.log(res);
+});
 
 // get file contents
-repo1.contents('primers/2012-03-14_regex-basics/extended.md').read((err, res) => {if (err) {return console.log('err:', err);} console.log(res);})
+repo1.contents('primers/2012-03-14_regex-basics/extended.md').read((err, res) => {
+  if (err) {
+    return console.log('err:', err);
+  }
+  console.log(res);
+});
 
 //to get glob conf.json alternative:
-res.tree.map(item => item.path).filter(path => path.indexOf('conf.json') !== -1)
+//res.tree.map(item => item.path).filter(path => path.indexOf('conf.json') !== -1)
 
 // to validate if a file ref in a conf matches the actual file:
-res.tree.map(item => item.path)
+//res.tree.map(item => item.path)
 
 /*
 {
