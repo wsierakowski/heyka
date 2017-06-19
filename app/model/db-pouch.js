@@ -18,14 +18,14 @@ const articlesDesignDoc = {
   views: {
     all: {
       map: (function mapFun(doc) {
-        emit([doc.publishedDate, doc.category._id]);
+        emit([doc.config.publishedDate, doc.category.id]);
       }).toString(),
       //http://stackoverflow.com/questions/33902858/couchdb-returns-wrong-total-rows
       reduce: '_count'
     },
     byCategory: {
       map: (function mapFun(doc) {
-        emit([doc.category._id, doc.publishedDate]);
+        emit([doc.category.id, doc.config.publishedDate]);
         //emit(doc.category, null)
       }).toString(),
       //http://stackoverflow.com/questions/33902858/couchdb-returns-wrong-total-rows
@@ -35,7 +35,7 @@ const articlesDesignDoc = {
       map: (function mapFun(doc) {
         if (doc.tags.length > 0) {
           for (var i in doc.tags) {
-            emit([doc.tags[i]._id, doc.publishedDate]);
+            emit([doc.tags[i].id, doc.config.publishedDate]);
           }
         }
       }).toString(),
@@ -166,9 +166,7 @@ class DBPouch extends DBInterface {
 
     coll.query(viewType, opts, (err, res) => {
       if (err) return cb(err);
-      let resCount = 0;
-      if (res.rows.length > 0)
-      resCount = res.rows[0].value;
+      let resCount = (res.rows.length > 0) ? res.rows[0].value : 0;
       cb(null, resCount);
     });
   }
@@ -177,12 +175,18 @@ class DBPouch extends DBInterface {
     this._checkInitialised();
     const coll = this._getCollection(collection);
 
+    // for pouchdb
+    doc._id = doc.id;
+
     coll.put(doc, cb);
   }
 
   upsert(collection, docId, newDoc, cb) {
     this._checkInitialised();
     const coll = this._getCollection(collection);
+
+    // for pouchdb
+    newDoc._id = newDoc.id;
 
     coll.get(docId, (err, doc) => {
       // document doesn't exists yet so create new one

@@ -228,9 +228,13 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
           return cb({where: 'readBriefAndExtended', path: article.dirPath, error: err});
         }
         let briefBody = data[0].toString();
-        if (briefExt === '.' + EXTS.BRIEF.HTML) article.brief = briefBody;
-        else if (briefExt === '.' + EXTS.BRIEF.MD) article.brief = marked(briefBody);
-        else return cb({
+        if (briefExt === '.' + EXTS.BRIEF.HTML) {
+          article.brief = briefBody;
+          article.briefType = 'html';
+        } else if (briefExt === '.' + EXTS.BRIEF.MD) {
+          article.brief = marked(briefBody);
+          article.briefType = 'md';
+        } else return cb({
           where: 'readBriefAndExtended',
           path: article.dirPath,
           error: `Unsupported brief file type ${article.config.content.brief}`}
@@ -238,9 +242,13 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
 
         let extendedBody = data[1].toString();
         if (extendedBody) article.config.content.isExtended = true; // TODO is this necessary
-        if (extendedExt === '.' + EXTS.EXTENDED.HTML) article.extended = extendedBody;
-        else if (extendedExt === '.' + EXTS.EXTENDED.MD) article.extended = marked(extendedBody);
-        else return cb({
+        if (extendedExt === '.' + EXTS.EXTENDED.HTML) {
+          article.extended = extendedBody;
+          article.extendedType = 'html';
+        } else if (extendedExt === '.' + EXTS.EXTENDED.MD) {
+          article.extended = marked(extendedBody);
+          article.extendedType = 'md';
+        } else return cb({
           where: 'readBriefAndExtended',
           path: article.dirPath,
           error: `Unsupported extended file type ${article.config.content.extended}`}
@@ -252,7 +260,7 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
 
   // All necessary processing on the articleConf before it is passed to db
   function postprocess(article, cb) {
-    article._id = article.slug = myUtils.slugify(article.config.title);
+    article.id = article.slug = myUtils.slugify(article.config.title);
 
     // TODO rething whether we still need to keep almost entire category doc in article
     // after we changed the way how we query articles by category...
@@ -266,6 +274,9 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
         name: myUtils.camelizefy(tag)
       };
     });
+
+    delete article.config.category;
+    delete article.config.tags;
 
     // to avoid "RangeError: Maximum call stack size exceeded."
     async.setImmediate(function() {

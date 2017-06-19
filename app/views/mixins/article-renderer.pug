@@ -6,17 +6,17 @@ mixin renderArticle(showBriefOnly, post)
       header
         //- TODO h2: a(href=blogurl + '/post/' + post.slug)= post.title
         if showBriefOnly
-          h2: a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id))= post.title
+          h2: a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id))= post.config.title
         else
-          h1= post.title
+          h1= post.config.title
         .row
           .article-icons-group1.col-sm-6.col-md-6
             if post.publishedDate
               span.glyphicon.glyphicon-time
               |  #{post.publishedDate.format('MMMM Do, YYYY')}  &nbsp;&nbsp;
-            if post.author
+            if post.config.author
               span.glyphicon.glyphicon-user
-              |  by #{post.author.name}  &nbsp;&nbsp;
+              |  by #{post.config.author.name}  &nbsp;&nbsp;
             if post.hits
               span.glyphicon.glyphicon-cloud-download
               |  #{post.hits}
@@ -47,10 +47,10 @@ mixin renderArticle(showBriefOnly, post)
             img(src=post._.image.fit(160,160)).img.pull-right
           else
             .image-wrap: img(src=data.post._.image.fit(750,450)).img-responsive
-        p.lead!= post.content.briefBody
+        p.lead!= post.brief
       //- p.lead
       //-   | #{post.content.brief}
-      if post.content.isExtended
+      if post.extended
         if showBriefOnly
           //- p.read-more: a(href=blogurl + '/post/' + post.slug) Read more...
           p.post.text-right
@@ -58,4 +58,4 @@ mixin renderArticle(showBriefOnly, post)
             a.text-right(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id)) continue reading...
         else
           p --------------------------------------
-          .post!= post.content.extendedBody
+          .post!= post.extended

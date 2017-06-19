@@ -10,9 +10,13 @@ class Article {
     //this.config.content.extended = filepath;
     //this.config.content.isExtended = true/false;
     //this.config.title = 'article title';
+    //this.config.author.name
+    //this.config.publishedDate
 
     this.brief = null;         //  string with html
+    this.briefType = 'html'/'md'
     this.extended = null;      //  string with html
+    this.extendedType = 'html'/'md'
 
     this.id = null;            //  'slug-and-id-are-the-same'
     this.slug = null;

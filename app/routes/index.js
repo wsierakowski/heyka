@@ -89,7 +89,7 @@ function initRouter() {
           // TODO: rename posts to articles
           let articles = locals.data.posts.results = findResponse.map(item => {
             const doc = item.doc;
-            doc.publishedDate = moment(item.doc.publishedDate);
+            doc.publishedDate = moment(item.doc.config.publishedDate);
             doc.image = {exists: false};
             return doc;
           });
@@ -179,7 +179,7 @@ function initRouter() {
 
           // TODO make it a module
           // get markdown tables display nicely with bootstrap
-          if (articleDoc.content.extendedType === "md") {
+          if (articleDoc.extendedType === "md") {
             const $ = cheerio.load(html);
             if (!$('table').attr('class')) {
               $('table').addClass('table table-condensed');
