@@ -163,7 +163,8 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
       readBriefAndExtended,
       // All necessary processing on the articleConf before it is passed to db
       postprocess,
-      insertArticlesToDB
+      insertArticlesToDB,
+      copyStaticFiles
     ], getImportArticleWaterfallCallback(cb));
   }
 
@@ -336,16 +337,19 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
     });
   }
 
-  function copyStaticFiles(cb) {
+  function copyStaticFiles(article, cb) {
     contentProvider.getPathsToFiles(article.dirPath, null, null, (err, filePaths) => {
       if (err) return cb({where: 'copyStaticFiles', path: article.dirPath, error: pushArticleErr});
 
       // remove articleConf, brief and extended files
       const articleSpecificFiles = [
-        path.join(article.dirPath, article.confFile),
-        path.join(article.dirPath, article.content.brief),
-        path.join(article.dirPath, article.content.extended)
+        article.confFile, article.config.content.brief, article.config.content.extended
       ];
+      // const articleSpecificFiles = [
+      //   path.join(article.dirPath, article.confFile),
+      //   path.join(article.dirPath, article.config.content.brief),
+      //   path.join(article.dirPath, article.config.content.extended)
+      // ];
 
       const articleStaticFiles = filePaths.filter(filePath => {
         return !articleSpecificFiles.some(articleFile => articleFile === filePath);
@@ -354,7 +358,7 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
       if (!articleStaticFiles.length) return cb(null);
 
       // here we have a list of all dirs with articleConf files!
-      log.info({where: "importArticle.copyStaticFiles", msg: `articleStaticFiles for "${articlePath}": ${articleStaticFiles}`});
+      log.info({where: "importArticle.copyStaticFiles", msg: `articleStaticFiles for "${article.dirPath}": ${articleStaticFiles}`});
 
       const targetArticlePath = path.join(conf.app.paths.staticFilesDir + '_' + db.name, article.category.id, article.id);
 
@@ -365,11 +369,12 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
           ///Users/wsierak/Projects/learning/heyka/_sample-db-local-repo/tips/2017-03-06_testing-articles-with-images/assets/large_img1.jpg
           ///Users/wsierak/Projects/learning/heyka/_sample-db-local-repo/tips/2017-03-06_testing-articles-with-images/brief.html
 
-          const fileDir = path.relative(article.dirPath, path.dirname(filePath));
+          const fileDir = path.dirname(filePath);//path.join(article.dirPath, path.dirname(filePath));
           //debugger;
+          const sourcePath = path.join(article.dirPath, filePath);
           const targetPath = path.join(targetArticlePath, fileDir, path.basename(filePath));
 
-          contentProvider.copyFile(filePath, targetPath, fileCpErr => {
+          contentProvider.copyFile(sourcePath, targetPath, fileCpErr => {
             if (fileCpErr) return copyStaticFileCb(fileCpErr);
             copyStaticFileCb(null);
           });
@@ -377,11 +382,11 @@ module.exports.fullImport = function(contentProvider, db, fullImportCb) {
           if (copyStaticFilesErr) {
             // One of the iterations produced an error.
             // All processing will now stop.
-            const msg = {where: 'copyStaticFiles', error: `Error copying files for "${articlePath}": ${copyStaticFilesErr}.`};
+            const msg = {where: 'copyStaticFiles', error: `Error copying files for "${article.dirPath}": ${copyStaticFilesErr}.`};
             log.error(msg);
             return cb(msg)
           }
-          console.log(`All files static files for ${articlePath} have been copied successfully.`);
+          console.log(`All files static files for ${article.dirPath} have been copied successfully.`);
           cb(null, article);
       });
 

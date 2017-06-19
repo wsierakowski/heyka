@@ -69,14 +69,19 @@ class ContentProviderLocalGitRepo extends ContentProviderInterface {
   copyFile(sourcePath, destinationPath, cb) {
     // doing streams here just as an excercise...
     const spath = path.join(this.rootPath, sourcePath);
-    const rs = fse.createReadStream(spath);
-    const ws = fse.createWriteStream(destinationPath);
+    const destDir = path.dirname(destinationPath);
 
-    rs
-      .once('end', () => cb(null))
-      .once('error', err => cb(err));
+    fse.ensureDir(destDir, err => {
+      if (err) return cb(err);
 
-    rs.pipe(ws);
+      const rs = fse.createReadStream(spath);
+      const ws = fse.createWriteStream(destinationPath);
+      rs
+        .once('end', () => cb(null))
+        .once('error', err => cb(err));
+
+      rs.pipe(ws);
+    });
   }
 }
 
