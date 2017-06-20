@@ -1,12 +1,13 @@
+const path = require('path');
 const Octokat = require('octokat');
 
 const ContentProviderInterface = require('./cp-interface');
 
-class ContentProviderGithubRemote extends ContentProviderInterface {
-  constructor(rootPath) {
+class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
+  constructor(rootPath, remoteRepoOwner, remoteRepoName) {
     super(rootPath);
     const octo = new Octokat();
-    this.repo = octo.repos('wsierakowski', 'demo-content');
+    this.repo = octo.repos(remoteRepoOwner, remoteRepoName);
 
     // TODO: implement caching so that git.trees doesn't have to be called multiple times
     // unless octokat itself does caching?
@@ -21,13 +22,19 @@ class ContentProviderGithubRemote extends ContentProviderInterface {
       if (!res.tree || res.tree.length === 0) {
         return cb('No config files found');
       }
+
+      // As per info at: https://developer.github.com/v3/git/trees/
+      // we want to remove anything that isn't a file from the results
+
       const confFiles = res.tree
+        .filter(item => item.type === 'blob')
         .map(item => item.path)
         .filter(file => {
-          const fileName = path.base(file);
-          const fileExt = path.extname(file);
-          const fileNameMatch = fileNamesList.filter(fname => fname === 'fileName');
-          const fileExtMatch = fileExtsList.filter(fext => fext === fileExt);
+          const parsed = path.parse(file);
+          const fileName = parsed.name;
+          const fileExt = parsed.ext ? parsed.ext.slice(1) : parsed.ext;
+          const fileNameMatch = fileNamesList.indexOf(fileName) !== -1;
+          const fileExtMatch = fileExtsList.indexOf(fileExt) !== -1;
           return fileNameMatch && fileExtMatch;
         });
       if (confFiles.length === 0) {
@@ -37,3 +44,5 @@ class ContentProviderGithubRemote extends ContentProviderInterface {
     });
   }
 }
+
+module.exports = ContentProviderRemoteGithubRepo;
