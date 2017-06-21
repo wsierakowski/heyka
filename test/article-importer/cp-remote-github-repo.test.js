@@ -3,7 +3,7 @@ const path = require('path');
 const stream = require('stream');
 const proxyquire = require('proxyquire');
 
-const CPRemoteGithubRepo = require('../../app/article-importer/cp-remote-github-repo');
+//const CPRemoteGithubRepo = require('../../app/article-importer/cp-remote-github-repo');
 
 const confStub = {
   app: {
@@ -17,9 +17,9 @@ const confStub = {
 
 const fsStub = {};
 
-// const CPRemoteGithubRepo = proxyquire('../../app/article-importer/cp-remote-github-repo', {
-//   'fs-extra': fsStub
-// });
+const CPRemoteGithubRepo = proxyquire('../../app/article-importer/cp-remote-github-repo', {
+  'fs-extra': fsStub
+});
 
 // TODO: test also with err scneario and dir
 if (1)
@@ -47,22 +47,30 @@ test('contentProvider.getPathsToFiles should return paths to conf files', functi
   });
 });
 
-if(0)
+if(1)
 test('contentProvider.getPathsToFiles should return paths to all files', function(t) {
   const expectedPaths = require('./cp-local-git-repo.fixture.js').allFiles;
-  const cp = new CPLocalGitRepo(confStub.app.paths.localRepoDir);
+  const cp = new CPRemoteGithubRepo(
+    '',
+    confStub.app.paths.remoteRepoOwner,
+    confStub.app.paths.remoteRepoName
+  );
 
   cp.getPathsToFiles(null, null, null, (err, fpaths) => {
-    fpaths = fpaths.map(fpath => path.relative(confStub.app.paths.localRepoDir, fpath));
+    //fpaths = fpaths.map(fpath => path.relative(confStub.app.paths.localRepoDir, fpath));
     t.deepEqual(fpaths, expectedPaths);
     t.end();
   });
 });
 
-if(0)
+if(1)
 test('contentProvider.readFile should return content of a file', function(t) {
   const fileToRead = require('./cp-local-git-repo.fixture.js').sampleConfigFile;
-  const cp = new CPLocalGitRepo(confStub.app.paths.localRepoDir);
+  const cp = new CPRemoteGithubRepo(
+    '',
+    confStub.app.paths.remoteRepoOwner,
+    confStub.app.paths.remoteRepoName
+  );
 
   cp.readFile(fileToRead.filePath, (err, data) => {
     const expectedContent = JSON.parse(fileToRead.fileContent);
@@ -73,28 +81,24 @@ test('contentProvider.readFile should return content of a file', function(t) {
   });
 });
 
-if(0)
+if(1)
 test('contentProvider.copyFile should copy content of a file to a destination', function(t) {
   const fileToRead = require('./cp-local-git-repo.fixture.js').sampleConfigFile;
-  const cp = new CPLocalGitRepo(confStub.app.paths.localRepoDir);
-  const destPath = './somepath';
-  let pipedFile = '';
+  const cp = new CPRemoteGithubRepo(
+    '',
+    confStub.app.paths.remoteRepoOwner,
+    confStub.app.paths.remoteRepoName
+  );
+  const destPath = './somepath/filename.json';
 
-  //https://stackoverflow.com/questions/21491567/how-to-implement-a-writable-stream
-  const ws = new stream.Writable();
-  ws._write = (chunk, encoding, done) => {
-    pipedFile += chunk.toString();
-    done();
-  };
-
-  fsStub.createWriteStream = (filePath) => {
-    t.equal(filePath, destPath);
-    return ws;
+  fsStub.outputFile = (path, content, cb) => {
+    t.equal(path, destPath);
+    t.deepEqual(JSON.parse(content), JSON.parse(fileToRead.fileContent));
+    cb(null);
   };
 
   cp.copyFile(fileToRead.filePath, destPath, (err) => {
-    //console.log('____2. This is what i got: ', pipedFile);
-    t.deepEqual(JSON.parse(fileToRead.fileContent), JSON.parse(pipedFile));
+    t.ifError(err, 'Copy file error');
     t.end();
   });
 });

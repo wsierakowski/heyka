@@ -1,5 +1,6 @@
 const path = require('path');
 const Octokat = require('octokat');
+const fse = require('fs-extra');
 
 const ContentProviderInterface = require('./cp-interface');
 
@@ -31,10 +32,22 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
         .map(item => item.path)
         .filter(file => {
           const parsed = path.parse(file);
-          const fileName = parsed.name;
-          const fileExt = parsed.ext ? parsed.ext.slice(1) : parsed.ext;
-          const fileNameMatch = fileNamesList.indexOf(fileName) !== -1;
-          const fileExtMatch = fileExtsList.indexOf(fileExt) !== -1;
+
+          let fileNameMatch = false;
+          if (fileNamesList === null) {
+            fileNameMatch = true;
+          } else {
+            fileNameMatch = fileNamesList.indexOf(parsed.name) !== -1;
+          }
+
+          let fileExtMatch = false;
+          if (fileExtsList === null) {
+            fileExtMatch = true;
+          } else {
+            const fileExt = parsed.ext ? parsed.ext.slice(1) : parsed.ext;
+            fileExtMatch = fileExtsList.indexOf(fileExt) !== -1;
+          }
+
           return fileNameMatch && fileExtMatch;
         });
       if (confFiles.length === 0) {
@@ -43,6 +56,42 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
       cb(null, confFiles);
     });
   }
+
+  readFile(filePath, cb) {
+    // TODO: ideally if we could do this with streams here as well
+    const fpath = path.join(this.rootPath, filePath);
+    this.repo.contents(fpath).read(cb);
+  }
+
+  // in this case we want to read from remote and save to a local file
+  copyFile(sourcePath, destinationPath, cb) {
+    // TODO: ideally if we could do this with streams here as well
+    const spath = path.join(this.rootPath, sourcePath);
+    const destDir = path.dirname(destinationPath);
+
+    this.readFile(sourcePath, (err, content) => {
+      if (err) return cb(err);
+      fse.outputFile(destinationPath, content, oferr => {
+        cb(oferr);
+      });
+    });
+
+    // async.waterfall([
+    //   function ensureDir(cb) {
+    //     fse.ensureDir(destDir, cb);
+    //   },
+    //   function readFile(cb) {
+    //     this.readFile(sourcePath, cb);
+    //   },
+    //   function writeFile(sourceContent, cb) {
+    //     fse.writeFile(destinationPath, sourceContent, cb);
+    //   }
+    // ], (err, res) => {
+    //   if (err) return cb(err);
+    //   cb(null);
+    // });
+  }
+
 }
 
 module.exports = ContentProviderRemoteGithubRepo;
