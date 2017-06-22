@@ -25,10 +25,10 @@ class ContentProviderLocalGitRepo extends ContentProviderInterface {
     const globPath = path.join(root, '**', filenames + `.${exts}`);
     //console.log('-------globPath', globPath);
     // 1. Search through all directories and identify those that have conf files.
-    glob(globPath, (gperr, confPaths) => {
+    glob(globPath, (gperr, retPaths) => {
       if (gperr) return cb(gperr);
-      confPaths = confPaths.map(p => path.relative(root, p));
-      cb(null, confPaths);
+      retPaths = retPaths.map(p => path.relative(root, p));
+      cb(null, retPaths);
     });
     //   // 2. Go through each directory identified as article dir and list the files inside.
     //   //const ret = [];

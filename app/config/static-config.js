@@ -3,6 +3,8 @@ module.exports = {
   //ARTICLES_DIR_PATH: '_sample-blog-local-repo',
   STATIC_FILES_DIR_PREFIX: 'staticFiles_',
   REPO_REMOTE_PATH: 'https://github.com/wsierakowski/demo-content.git',
+  REPO_REMOTE_OWNER: 'wsierakowski',
+  REPO_REMOTE_NAME: 'demo-content',
   REPO_LOCAL_PATH: 'articles-repo',
   BLOG_PATHS: {
     blog: '/',

@@ -9,6 +9,7 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
     super(rootPath);
     const octo = new Octokat();
     this.repo = octo.repos(remoteRepoOwner, remoteRepoName);
+    this.repoTreeCache = null;
 
     // TODO: implement caching so that git.trees doesn't have to be called multiple times
     // unless octokat itself does caching?
@@ -16,45 +17,60 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
 
   getPathsToFiles(dir, fileNamesList, fileExtsList, cb) {
     // get tree recursively
-    this.repo.git.trees('master?recursive=1').read((err, res) => {
-      if (err) {
-        return cb(err);
-      }
-      if (!res.tree || res.tree.length === 0) {
-        return cb('No config files found');
-      }
+    // https://api.github.com/repos/wsierakowski/demo-content/git/trees/fc5432c34d7751633fe9eab005b7e2f0c54dfb52
+    if (!this.repoTreeCache) {
+      this.repo.git.trees('master?recursive=1').read((err, res) => {
+        if (err) {
+          return cb(err);
+        }
+        if (!res.tree || res.tree.length === 0) {
+          return cb('No config files found');
+        }
+        this.repoTreeCache = res.tree;
+        this._findMatchesInTree(dir, fileNamesList, fileExtsList, cb);
+      });
+    } else {
+      this._findMatchesInTree(dir, fileNamesList, fileExtsList, cb);
+    }
+  }
 
-      // As per info at: https://developer.github.com/v3/git/trees/
-      // we want to remove anything that isn't a file from the results
+  _findMatchesInTree(dir, fileNamesList, fileExtsList, cb) {
+    if (!this.repoTreeCache) return cb('Oops... Repo tree cache not available.');
+    // As per info at: https://developer.github.com/v3/git/trees/
+    // we want to remove anything that isn't a file from the results
 
-      const confFiles = res.tree
-        .filter(item => item.type === 'blob')
-        .map(item => item.path)
-        .filter(file => {
-          const parsed = path.parse(file);
+    let retPaths = this.repoTreeCache;
+    if (dir) {
+      retPaths = retPaths.filter(item => item.path.indexOf(dir) !== -1)
+    }
+    retPaths = retPaths
+      .filter(item => item.type === 'blob')
+      .map(item => item.path)
+      .filter(file => {
+        const parsed = path.parse(file);
 
-          let fileNameMatch = false;
-          if (fileNamesList === null) {
-            fileNameMatch = true;
-          } else {
-            fileNameMatch = fileNamesList.indexOf(parsed.name) !== -1;
-          }
+        let fileNameMatch = false;
+        if (fileNamesList === null) {
+          fileNameMatch = true;
+        } else {
+          fileNameMatch = fileNamesList.indexOf(parsed.name) !== -1;
+        }
 
-          let fileExtMatch = false;
-          if (fileExtsList === null) {
-            fileExtMatch = true;
-          } else {
-            const fileExt = parsed.ext ? parsed.ext.slice(1) : parsed.ext;
-            fileExtMatch = fileExtsList.indexOf(fileExt) !== -1;
-          }
+        let fileExtMatch = false;
+        if (fileExtsList === null) {
+          fileExtMatch = true;
+        } else {
+          const fileExt = parsed.ext ? parsed.ext.slice(1) : parsed.ext;
+          fileExtMatch = fileExtsList.indexOf(fileExt) !== -1;
+        }
 
-          return fileNameMatch && fileExtMatch;
-        });
-      if (confFiles.length === 0) {
-        return cb('No config files found');
-      }
-      cb(null, confFiles);
-    });
+        return fileNameMatch && fileExtMatch;
+      });
+
+    if (retPaths.length === 0) {
+      return cb('No config files found');
+    }
+    cb(null, retPaths);
   }
 
   readFile(filePath, cb) {

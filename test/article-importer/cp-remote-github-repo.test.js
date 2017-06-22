@@ -63,6 +63,23 @@ test('contentProvider.getPathsToFiles should return paths to all files', functio
   });
 });
 
+// TODO: create a test to fetch content inside a directory
+if(0)
+test('contentProvider.getPathsToFiles should return paths to all files', function(t) {
+  const expectedPaths = require('./cp-local-git-repo.fixture.js').allFiles;
+  const cp = new CPRemoteGithubRepo(
+    '',
+    confStub.app.paths.remoteRepoOwner,
+    confStub.app.paths.remoteRepoName
+  );
+
+  cp.getPathsToFiles(null, null, null, (err, fpaths) => {
+    //fpaths = fpaths.map(fpath => path.relative(confStub.app.paths.localRepoDir, fpath));
+    t.deepEqual(fpaths, expectedPaths);
+    t.end();
+  });
+});
+
 if(1)
 test('contentProvider.readFile should return content of a file', function(t) {
   const fileToRead = require('./cp-local-git-repo.fixture.js').sampleConfigFile;
