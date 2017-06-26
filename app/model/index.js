@@ -19,8 +19,8 @@ var modelStatus = NOT_INITIALISED;
 const path = require('path');
 const conf = require('../config');
 const orchestrator = require('../article-importer/orchestrator');
-//const CPLocalGitRepo = require('../article-importer/cp-local-git-repo');
-//const cp = new CPLocalGitRepo(path.join(__dirname, '../../test/_sample-articles'));
+// const CPLocalGitRepo = require('../article-importer/cp-local-git-repo');
+// const cp = new CPLocalGitRepo(path.join(__dirname, '../../test/_sample-articles'));
 const CPRemoteGithubRepo = require('../article-importer/cp-remote-github-repo');
 const cp = new CPRemoteGithubRepo('', conf.REPO_REMOTE_OWNER, conf.REPO_REMOTE_NAME);
 

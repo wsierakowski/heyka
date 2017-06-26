@@ -70,6 +70,9 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
     if (retPaths.length === 0) {
       return cb('No config files found');
     }
+    if (dir) {
+      retPaths = retPaths.map(filePath => path.relative(dir, filePath));
+    }
     cb(null, retPaths);
   }
 
