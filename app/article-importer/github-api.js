@@ -2,26 +2,125 @@
 //https://github.com/philschatz/octokat.js/tree/master/examples
 //https://developer.github.com/v3/git/trees/#get-a-tree
 
-const Octokat = require('octokat');
+// const Octokat = require('octokat');
+//
+// const octo1 = new Octokat();
+// const repo1 = octo1.repos('wsierakowski', 'demo-content');
+//
+// // get tree recursively
+// repo1.git.trees('master?recursive=1').read((err, res) => {
+//   if (err) {
+//     return console.log('err:', err);
+//   }
+//   console.log(res);
+// });
+//
+// // get file contents
+// repo1.contents('primers/2012-03-14_regex-basics/extended.md').read((err, res) => {
+//   if (err) {
+//     return console.log('err:', err);
+//   }
+//   console.log(res);
+// });
 
-const octo1 = new Octokat();
-const repo1 = octo1.repos('wsierakowski', 'demo-content');
+////////////////////////////////////////////////////////////////////////////////
 
-// get tree recursively
-repo1.git.trees('master?recursive=1').read((err, res) => {
-  if (err) {
-    return console.log('err:', err);
+// https://api.github.com/repos/wsierakowski/demo-content/git/blobs/b1cfd38665ac2fde2832f6aa643ac7b92433142b
+// https://api.github.com/repos/wsierakowski/demo-content/contents/tips/2017-03-06_testing-articles-with-images/test_img2.jpeg
+
+const fs = require('fs');
+const https = require('https');
+
+// function requestLogger(httpModule){
+//     var original = httpModule.request
+//     httpModule.request = function(options, callback){
+//       console.log('**', options.href||options.proto+"://"+options.host+options.path, options.method)
+//       console.log(options.url);
+//       return original(options, callback)
+//     }
+// }
+//
+// requestLogger(require('http'))
+// requestLogger(require('https'))
+
+console.log('about to send the request');
+
+const get_options = {
+  host: 'api.github.com',
+  port: '443',
+  path: '/repos/wsierakowski/demo-content/contents/tips/2017-03-06_testing-articles-with-images/test_img2.jpeg',
+  method: 'GET',
+  headers: {
+    'User-Agent': 'grzyb wielki',
+    'Authorization': 'token ' + process.env.GITHUB_TOKEN,
+    'accept': 'application/json'
   }
-  console.log(res);
+};
+
+const req = https.request(get_options, function(res) {
+  console.log('connected');
+  let body = '';
+
+  res.on('data', function(d) {
+      body += d;
+  });
+
+  res.on('end', function() {
+    // Data reception is done, do whatever with it!
+
+    if (!body) return;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch (e) {
+      console.log('---->json error', e);
+    }
+    if (!parsed) return;
+
+    const b64string = parsed.content;
+    const buf = Buffer.from(b64string, 'base64');
+
+    var wstream = fs.createWriteStream('test.jpg');
+    wstream.write(buf);
+    wstream.end();
+    console.log('done?')
+  });
+
+  res.on('error', function(err) {
+    console.log('---->0ERRoR', err);
+  });
+})
+
+req.on('error', function(err) {
+  console.log('---->1ERRoR', err);
 });
 
-// get file contents
-repo1.contents('primers/2012-03-14_regex-basics/extended.md').read((err, res) => {
-  if (err) {
-    return console.log('err:', err);
-  }
-  console.log(res);
-});
+req.end();
+
+/////////
+
+// var http = require('http');
+// var options = {
+//     host: 'www.google.com',
+//     port: 80,
+//     path: '/'
+//   };
+// var req = http.get(options, function(response) {
+//   // handle the response
+//   var res_data = '';
+//   response.on('data', function(chunk) {
+//     res_data += chunk;
+//   });
+//   response.on('end', function() {
+//     console.log(res_data);
+//   });
+// });
+// req.on('error', function(e) {
+//   console.log("Got error: " + e.message);
+// });
+
+////////////////////////////////////////////////////////////////////////////////
 
 //to get glob conf.json alternative:
 //res.tree.map(item => item.path).filter(path => path.indexOf('conf.json') !== -1)

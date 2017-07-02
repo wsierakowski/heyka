@@ -1,13 +1,34 @@
 const path = require('path');
 const Octokat = require('octokat');
 const fse = require('fs-extra');
+const https = require('https');
+const conf = require('../config');
+
+function requestLogger(httpModule){
+    var original = httpModule.request
+    httpModule.request = function(options, callback){
+      console.log('**', options.href||options.proto+"://"+options.host+options.path, options.method)
+      console.log(options.url);
+      return original(options, callback)
+    }
+}
+
+requestLogger(require('http'))
+requestLogger(require('https'))
 
 const ContentProviderInterface = require('./cp-interface');
 
 class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
   constructor(rootPath, remoteRepoOwner, remoteRepoName) {
     super(rootPath);
-    const octo = new Octokat();
+    this.remoteRepoName = remoteRepoOwner;
+    this.remoteRepoOwner = remoteRepoName;
+    const credentials = {
+      //username: process.env.GITHUB_USER,
+      //password: process.env.GITHUB_PASS
+      token: process.env.GITHUB_TOKEN
+    };
+    const octo = new Octokat(credentials);
     this.repo = octo.repos(remoteRepoOwner, remoteRepoName);
     this.repoTreeCache = null;
 
@@ -76,39 +97,63 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
     cb(null, retPaths);
   }
 
-  readFile(filePath, cb) {
-    // TODO: ideally if we could do this with streams here as well
-    const fpath = path.join(this.rootPath, filePath);
-    this.repo.contents(fpath).read(cb);
+  readFile(filePath, asBuffer, cb) {
+    //const fpath = path.join(this.rootPath, filePath);
+    //this.repo.contents(fpath).read(cb);
+
+    if (typeof asBuffer === 'function' ) {
+      cb = asBuffer;
+      asBuffer = false;
+    }
+
+    const getOptions = {
+      host: 'api.github.com',
+      port: '443',
+      method: 'GET',
+      path: `/repos/${conf.REPO_REMOTE_OWNER}/${conf.REPO_REMOTE_NAME}/contents/${filePath}`,
+      headers: {
+        'User-Agent': 'heyka',
+        'Authorization': 'token ' + process.env.GITHUB_TOKEN,
+        'accept': 'application/json'
+      }
+    };
+    const req = https.request(getOptions, res => {
+      let body = '';
+      res.on('data', d => body += d);
+      res.on('end', () => {
+        if (!body) return cb(`Empty body for ${sourcePath}.`);
+        let parsed;
+        try {
+          parsed = JSON.parse(body);
+        } catch (e) {
+          return cb(`Error parsing body for ${sourcePath}.`)
+        }
+        if (!parsed) return cb(`Empty body for ${sourcePath}.`);
+        const b64string = parsed.content;
+        let ret = Buffer.from(b64string, 'base64');
+        if (!asBuffer) ret = ret.toString();
+        cb(null, ret);
+      });
+    });
+    req.once('error', err => {
+      return cb(err);
+    });
+    req.end();
   }
 
   // in this case we want to read from remote and save to a local file
   copyFile(sourcePath, destinationPath, cb) {
     // TODO: ideally if we could do this with streams here as well
-    const spath = path.join(this.rootPath, sourcePath);
+    //const spath = path.join(this.rootPath, sourcePath);
     const destDir = path.dirname(destinationPath);
 
-    this.readFile(sourcePath, (err, content) => {
+    this.readFile(sourcePath, true, (err, buf) => {
       if (err) return cb(err);
-      fse.outputFile(destinationPath, content, oferr => {
-        cb(oferr);
+
+      fse.outputFile(destinationPath, buf, 'binary', ofErr => {
+        cb(ofErr);
       });
     });
-
-    // async.waterfall([
-    //   function ensureDir(cb) {
-    //     fse.ensureDir(destDir, cb);
-    //   },
-    //   function readFile(cb) {
-    //     this.readFile(sourcePath, cb);
-    //   },
-    //   function writeFile(sourceContent, cb) {
-    //     fse.writeFile(destinationPath, sourceContent, cb);
-    //   }
-    // ], (err, res) => {
-    //   if (err) return cb(err);
-    //   cb(null);
-    // });
   }
 
 }
