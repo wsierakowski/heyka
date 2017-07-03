@@ -1,5 +1,4 @@
 const path = require('path');
-const Octokat = require('octokat');
 const fse = require('fs-extra');
 const https = require('https');
 const conf = require('../config');
@@ -21,15 +20,6 @@ const ContentProviderInterface = require('./cp-interface');
 class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
   constructor(rootPath, remoteRepoOwner, remoteRepoName) {
     super(rootPath);
-    this.remoteRepoName = remoteRepoOwner;
-    this.remoteRepoOwner = remoteRepoName;
-    const credentials = {
-      //username: process.env.GITHUB_USER,
-      //password: process.env.GITHUB_PASS
-      token: process.env.GITHUB_TOKEN
-    };
-    const octo = new Octokat(credentials);
-    this.repo = octo.repos(remoteRepoOwner, remoteRepoName);
     this.repoTreeCache = null;
 
     // TODO: implement caching so that git.trees doesn't have to be called multiple times
@@ -40,7 +30,7 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
     // get tree recursively
     // https://api.github.com/repos/wsierakowski/demo-content/git/trees/fc5432c34d7751633fe9eab005b7e2f0c54dfb52
     if (!this.repoTreeCache) {
-      this.repo.git.trees('master?recursive=1').read((err, res) => {
+      _sendRequest('git/trees/master?recursive=1', (err, res) => {
         if (err) {
           return cb(err);
         }
@@ -97,48 +87,10 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
     cb(null, retPaths);
   }
 
-  readFile(filePath, asBuffer, cb) {
+  readFile(filePath, cb) {
     //const fpath = path.join(this.rootPath, filePath);
     //this.repo.contents(fpath).read(cb);
-
-    if (typeof asBuffer === 'function' ) {
-      cb = asBuffer;
-      asBuffer = false;
-    }
-
-    const getOptions = {
-      host: 'api.github.com',
-      port: '443',
-      method: 'GET',
-      path: `/repos/${conf.REPO_REMOTE_OWNER}/${conf.REPO_REMOTE_NAME}/contents/${filePath}`,
-      headers: {
-        'User-Agent': 'heyka',
-        'Authorization': 'token ' + process.env.GITHUB_TOKEN,
-        'accept': 'application/json'
-      }
-    };
-    const req = https.request(getOptions, res => {
-      let body = '';
-      res.on('data', d => body += d);
-      res.on('end', () => {
-        if (!body) return cb(`Empty body for ${sourcePath}.`);
-        let parsed;
-        try {
-          parsed = JSON.parse(body);
-        } catch (e) {
-          return cb(`Error parsing body for ${sourcePath}.`)
-        }
-        if (!parsed) return cb(`Empty body for ${sourcePath}.`);
-        const b64string = parsed.content;
-        let ret = Buffer.from(b64string, 'base64');
-        if (!asBuffer) ret = ret.toString();
-        cb(null, ret);
-      });
-    });
-    req.once('error', err => {
-      return cb(err);
-    });
-    req.end();
+    _sendRequest(`contents/${filePath}`, cb);
   }
 
   // in this case we want to read from remote and save to a local file
@@ -147,7 +99,7 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
     //const spath = path.join(this.rootPath, sourcePath);
     const destDir = path.dirname(destinationPath);
 
-    this.readFile(sourcePath, true, (err, buf) => {
+    _sendRequest(`contents/${sourcePath}`, true, (err, buf) => {
       if (err) return cb(err);
 
       fse.outputFile(destinationPath, buf, 'binary', ofErr => {
@@ -155,7 +107,50 @@ class ContentProviderRemoteGithubRepo extends ContentProviderInterface {
       });
     });
   }
+}
 
+function _sendRequest(path, asBuffer, cb) {
+  if (typeof asBuffer === 'function' ) {
+    cb = asBuffer;
+    asBuffer = false;
+  }
+
+  const getOptions = {
+    host: 'api.github.com',
+    port: '443',
+    method: 'GET',
+    path: `/repos/${conf.REPO_REMOTE_OWNER}/${conf.REPO_REMOTE_NAME}/${path}`,
+    headers: {
+      'User-Agent': 'heyka',
+      'Authorization': 'token ' + process.env.GITHUB_TOKEN,
+      'accept': 'application/json'
+    }
+  };
+  const req = https.request(getOptions, res => {
+    let body = '';
+    res.on('data', d => body += d);
+    res.on('end', () => {
+      if (!body) return cb(`Empty body for ${sourcePath}.`);
+      let parsed;
+      try {
+        parsed = JSON.parse(body);
+      } catch (e) {
+        return cb(`Error parsing body for ${sourcePath}.`)
+      }
+      if (!parsed) return cb(`Empty body for ${sourcePath}.`);
+      if (parsed.content && parsed.encoding === 'base64') {
+        const b64string = parsed.content;
+        let ret = Buffer.from(b64string, 'base64');
+        if (!asBuffer) ret = ret.toString();
+        return cb(null, ret);
+      }
+      cb(null, parsed);
+    });
+  });
+  req.once('error', err => {
+    return cb(err);
+  });
+  req.end();
 }
 
 module.exports = ContentProviderRemoteGithubRepo;

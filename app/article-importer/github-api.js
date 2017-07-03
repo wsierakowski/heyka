@@ -1,3 +1,5 @@
+// This file is not in use by heyka app. It is only used for experimenting.
+
 //https://developer.github.com/v3/repos/contents/#get-contents
 //https://github.com/philschatz/octokat.js/tree/master/examples
 //https://developer.github.com/v3/git/trees/#get-a-tree
@@ -25,8 +27,34 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+//https://api.github.com/repos/wsierakowski/demo-content/git/trees/master?recursive=1
+
+////////////////////////////////////////////////////////////////////////////////
+
 // https://api.github.com/repos/wsierakowski/demo-content/git/blobs/b1cfd38665ac2fde2832f6aa643ac7b92433142b
 // https://api.github.com/repos/wsierakowski/demo-content/contents/tips/2017-03-06_testing-articles-with-images/test_img2.jpeg
+
+/*
+The above returns:
+{
+"name": "conf.json",
+"path": "tips/2017-03-06_testing-articles-with-images/conf.json",
+"sha": "584b562c8b24563ebc0add638db647fb41c7af43",
+"size": 361,
+"url": "https://api.github.com/repos/wsierakowski/demo-content/contents/tips/2017-03-06_testing-articles-with-images/conf.json?ref=master",
+"html_url": "https://github.com/wsierakowski/demo-content/blob/master/tips/2017-03-06_testing-articles-with-images/conf.json",
+"git_url": "https://api.github.com/repos/wsierakowski/demo-content/git/blobs/584b562c8b24563ebc0add638db647fb41c7af43",
+"download_url": "https://raw.githubusercontent.com/wsierakowski/demo-content/master/tips/2017-03-06_testing-articles-with-images/conf.json",
+"type": "file",
+"content": "ewogICJhdXRob3IiOiB7CiAgICAibmFtZSI6ICJzaWdtYW4iCiAgfSwKICAi Y2F0ZWdvcnkiOiAidGlwcyIsCiAgImNvbnRlbnQiOiB7CiAgICAiYnJpZWYi OiAiYnJpZWYuaHRtbCIsCiAgICAiZXh0ZW5kZWQiOiAiZXh0ZW5kZWQubWQi LAogICAgImV4dGVuZGVkVHlwZSI6ICJtZCIKICB9LAogICJwdWJsaXNoZWRE YXRlIjogIjIwMTctMDMtMDZUMDA6MDA6MDAuMDAwKzAwMDAiLAogICJwdWJs aXNoZWQiOiB0cnVlLAogICJzdGF0ZSI6ICJwdWJsaXNoZWQiLAogICJ0YWdz IjogWyJ0ZXN0aW5nIl0sCiAgInRpdGxlIjogIlRlc3RpbmcgYXJ0aWNsZSB3 aXRoIGludGVybmFsIGFzc2V0cyBzZXJ2ZWQgYXMgc3RhdGljIGZpbGVzIgp9 Cg== ",
+"encoding": "base64",
+"_links": {
+"self": "https://api.github.com/repos/wsierakowski/demo-content/contents/tips/2017-03-06_testing-articles-with-images/conf.json?ref=master",
+"git": "https://api.github.com/repos/wsierakowski/demo-content/git/blobs/584b562c8b24563ebc0add638db647fb41c7af43",
+"html": "https://github.com/wsierakowski/demo-content/blob/master/tips/2017-03-06_testing-articles-with-images/conf.json"
+}
+}
+*/
 
 const fs = require('fs');
 const https = require('https');
