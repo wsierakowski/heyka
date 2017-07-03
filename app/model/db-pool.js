@@ -29,7 +29,7 @@ class DBPool {
     const freeIdx = this._info.indexOf(this.status.FREE);
     if (freeIdx === -1) return cb({code: 'DBPool.01', msg: 'No dbs available.'});
     this._updateCounter++;
-    const dbName = 'db_(' + this._updateCounter + ')_' + freeIdx;
+    const dbName = 'db_' + this._updateCounter + '_' + freeIdx;
     console.log(`* DBPool: Initialising next db: ${dbName}. Status: ${this._info}`);
     this._pool[freeIdx] = new this._DB(dbName);
     this._info[freeIdx] = this.status.LOADING;

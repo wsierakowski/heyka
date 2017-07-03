@@ -55,7 +55,7 @@ class DBPouch extends DBInterface {
   }
 
   _checkInitialised() {
-    if (!this._initialised) throw `Database not initialised while attepting to execute find.`;
+    if (!this._initialised) throw `Database not initialised while attepting to execute operation.`;
   }
 
   _getCollection(collection) {
@@ -185,14 +185,16 @@ class DBPouch extends DBInterface {
     this._checkInitialised();
     const coll = this._getCollection(collection);
 
+    // TODO: why do we need the docId here if it is also present in the newDoc?
+
     // for pouchdb
     newDoc._id = newDoc.id;
 
     coll.get(docId, (err, doc) => {
       // document doesn't exists yet so create new one
       if (err) {
-          doc = newDoc;
-          doc._id = docId;
+        doc = newDoc;
+        doc._id = docId;
       } else {
         // otherwise update it - a bit hacky implementation but ok for this requirement
         Object.keys(newDoc).forEach(function (key) {
