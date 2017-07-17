@@ -2,16 +2,13 @@ const DBPool = require('./db-pool');
 const BlogDB = require('./db-pouch');
 //const blogDB = new BlogDB();
 
-const ArticleImporter = require('../article-importer');
-const articleImporter = new ArticleImporter();
-
-const dbPool = new DBPool(BlogDB);
+// const ArticleImporter = require('../article-importer');
+// const articleImporter = new ArticleImporter();
 
 const NOT_INITIALISED = 0;
 const INITIALISING = 1;
 const RUNNING = 2;
 const UPDATING = 3;
-var modelStatus = NOT_INITIALISED;
 
 //////////////////////////////////
 // 20170612 testing article importer orchestrator
@@ -19,32 +16,44 @@ var modelStatus = NOT_INITIALISED;
 const path = require('path');
 const conf = require('../config');
 const orchestrator = require('../article-importer/orchestrator');
-// const CPLocalGitRepo = require('../article-importer/cp-local-git-repo');
-// const cp = new CPLocalGitRepo(path.join(__dirname, '../../test/_sample-articles'));
-const CPRemoteGithubRepo = require('../article-importer/cp-remote-github-repo');
-const cp = new CPRemoteGithubRepo('', conf.REPO_REMOTE_OWNER, conf.REPO_REMOTE_NAME);
 
 //////////////////////////////////
 
-class Model {
-  constructor() {}
+let instance = null;
 
-  static init(cb) {
-    if (modelStatus !== NOT_INITIALISED) {
+// singleton
+class Model {
+  constructor() {
+    if (instance) return instance;
+    instance = this;
+    instance.dbPool = new DBPool(BlogDB);
+    instance.status = NOT_INITIALISED;
+  }
+
+  static get model() {
+    return new Model();
+  }
+
+  setContentProvider(cp) {
+    instance.cp = cp;
+  }
+
+  init(cb) {
+    if (instance.status !== NOT_INITIALISED) {
       return cb({code: 'model.01', msg: 'Trying to init model that is already initialised.'});
     }
-    modelStatus = INITIALISING;
+    instance.status = INITIALISING;
     //blogDB.init(cb);
-    dbPool.getNextDb((poolErr, db) => {
+    instance.dbPool.getNextDb((poolErr, db) => {
       if (poolErr) return cb(poolErr);
       //////////////////////// 20170612
       //articleImporter.initialImport(db, importErr => {
-      orchestrator.fullImport(cp, db, importErr => {
+      orchestrator.fullImport(instance.cp, db, importErr => {
       ////////////////////////
         if (importErr) return cb(importErr);
-        dbPool.swapDb(swapErr => {
+        instance.dbPool.swapDb(swapErr => {
           if (swapErr) return cb(swapErr);
-          modelStatus = RUNNING;
+          instance.status = RUNNING;
           debugger;
           cb(null);
         });
@@ -54,47 +63,47 @@ class Model {
 
   static update(cb) {
     console.log('\n\n\n INSIDE UPDATE \n\n\n')
-    if (modelStatus !== RUNNING) {
+    if (instance.status !== RUNNING) {
       return cb({code: 'model.02', msg: 'Trying to update model that isn\'t initialised yet.'});
     }
-    dbPool.getNextDb((poolErr, db) => {
+    instance.dbPool.getNextDb((poolErr, db) => {
       if (poolErr) return cb(poolErr);
-      modelStatus = UPDATING;
+      instance.status = UPDATING;
 
-      articleImporter.initialImport(db, importErr => {
+      //articleImporter.initialImport(db, importErr => {
+      orchestrator.fullImport(instance.cp, db, importErr => {
         if (importErr) {
           console.log('** Error something went wrong with import while updating.', importErr);
           // TODO destroy db to allow next update in the future
           return cb(importErr);
         }
-        dbPool.swapDb(swapErr => {
+        instance.dbPool.swapDb(swapErr => {
           if (swapErr) return cb(swapErr);
-          modelStatus = RUNNING;
+          instance.status = RUNNING;
           cb(null);
         });
       });
     });
   }
 
-  static getName() {
-    debugger;
-    return dbPool.db.name;
+  getName() {
+    return instance.dbPool.db.name;
   }
 
-  static findOne(collection, docId, cb) {
-    return dbPool.db.findOne(collection, docId, cb);
+  findOne(collection, docId, cb) {
+    return instance.dbPool.db.findOne(collection, docId, cb);
   }
 
-  static find(collection, filter, queryOptions, cb) {
-    return dbPool.db.find(collection, filter, queryOptions, cb);
+  find(collection, filter, queryOptions, cb) {
+    return instance.dbPool.db.find(collection, filter, queryOptions, cb);
   }
 
-  static count(collection, filter, cb) {
-    return dbPool.db.count(collection, filter, cb);
+  count(collection, filter, cb) {
+    return instance.dbPool.db.count(collection, filter, cb);
   }
 
-  static get col() {
-    return dbPool.db.col;
+  get col() {
+    return instance.dbPool.db.col;
   }
 }
 

@@ -13,8 +13,22 @@ const async = require('async');
 const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
-const model = require('../model');
-const pullLocally = require('../content-updater/git-pull-locally');
+// content-provider, content-updater
+let cp, cu;
+
+if (conf.CONTENT_SOURCE_TYPE === 'local-git-repo') {
+  const CPLocalGitRepo = require('../article-importer/cp-local-git-repo');
+  cp = new CPLocalGitRepo(path.join(__dirname, '../../test/_sample-articles'));
+  cu = require('../content-updater/local-git-update-task');
+
+} else if (conf.CONTENT_SOURCE_TYPE === 'remote-github-repo') {
+  const CPRemoteGithubRepo = require('../article-importer/cp-remote-github-repo');
+  cp = new CPRemoteGithubRepo('', conf.REPO_REMOTE_OWNER, conf.REPO_REMOTE_NAME);
+  cu = require('../content-updater/remote-github-update-task');
+}
+
+const model = require('../model').model;
+model.setContentProvider(cp);
 
 var heykaApp, server;
 
@@ -35,7 +49,11 @@ const port = normalizePort(process.env.PORT || conf.BLOG_PORT);
 
 async.series([
   function pullLocalRepo(cb) {
-    pullLocally(conf.app.paths.localRepoDir, conf.REPO_REMOTE_PATH, cb);
+    cu.beginPull(err => {
+      if (err) return cb(err);
+      cu.finish();
+      cb();
+    });
   },
   model.init,
   function initialiseWebApp(cb) {

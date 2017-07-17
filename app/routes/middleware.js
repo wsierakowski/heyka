@@ -12,7 +12,7 @@ const	async = require('async');
 const	myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
-const model = require('../model');
+const model = require('../model').model;
 
 /**
   Initialises the standard view locals

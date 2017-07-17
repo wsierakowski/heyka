@@ -9,7 +9,7 @@ const middleware = require('./middleware');
 const myUtils = require('../libs/my-utils');
 const conf = require('../config');
 
-const model = require('../model');
+const model = require('../model').model;
 
 function initRouter() {
   console.log('INIT ROUTER');
