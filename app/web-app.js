@@ -13,7 +13,7 @@ const model = require('./model').model;
 const myUtils = require('./libs/my-utils.js');
 const conf = require('./config');
 
-const cu = require('./content-updater/local-git-update-task');
+//const cu = require('./content-updater/local-git-update-task');
 
 const app = express();
 
@@ -21,7 +21,7 @@ const app = express();
 
 var initialised = false;
 
-function init() {
+function init(cu) {
   console.log('WEB APP INIT');
 
   let mainRouter = index();

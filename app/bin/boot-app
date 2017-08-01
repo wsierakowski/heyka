@@ -57,7 +57,7 @@ async.series([
   },
   model.init,
   function initialiseWebApp(cb) {
-    heykaApp = webApp.init();
+    heykaApp = webApp.init(cu);
     heykaApp.set('port', port);
 
     /**
