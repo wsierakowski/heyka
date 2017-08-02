@@ -14,6 +14,6 @@ module.exports = {
   WEBHOOK_PATH: '/gitpush',
   ARTICLES_PER_PAGE: 4,
   BLOG_PORT: 8081,
-  CONTENT_SOURCE_TYPE: 'remote-github-repo'
-  //CONTENT_SOURCE_TYPE: 'local-git-repo'
+  //CONTENT_SOURCE_TYPE: 'remote-github-repo'
+  CONTENT_SOURCE_TYPE: 'local-git-repo'
 };

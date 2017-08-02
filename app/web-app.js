@@ -86,10 +86,11 @@ function init(cu) {
   app.use(conf.WEBHOOK_PATH, webhookRouter);
 
   //app.use('/', index());
-  app.use('/', function (req, res, next) {
-    // this needs to be a function to hook on whatever the current router is
-    mainRouter(req, res, next);
-  });
+  app.use('/', mainRouter);
+  // app.use('/', function (req, res, next) {
+  //   // this needs to be a function to hook on whatever the current router is
+  //   mainRouter(req, res, next);
+  // });
   //app.use('/users', users);
 
   // catch 404 and forward to error handler
