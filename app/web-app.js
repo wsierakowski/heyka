@@ -134,8 +134,7 @@ function initNav(cb) {
   model.find(model.col.CATEGORIES, (err, res) => {
     if (err) return cb({where: 'initNav', err: err});
     //app.locals.navLinks.push({label: 'MenuItem1', key: 'menuitem1', href:'http://sigman.pl'});
-    res.forEach(doc => {
-      let cat = doc.doc;
+    res.forEach(cat => {
       //console.log('cat:', {label: cat.name, key: cat.id, href: cat.id});
       app.locals.navLinks.push({
         label: cat.name,

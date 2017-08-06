@@ -74,9 +74,9 @@ exports.fetchCategories = function(req, res, next) {
     if (err) return next(err);
     catList.forEach((category) => {
       locals.data.categories.push({
-        id: category.doc.id,
-        name: category.doc.name,
-        articleCount: category.doc.articles.length
+        id: category.id,
+        name: category.name,
+        articleCount: category.articles.length
       });
     });
     next();
@@ -93,9 +93,9 @@ exports.fetchTags = function(req, res, next) {
     if (err) return next(err);
     tagList.forEach((tag) => {
       locals.data.tags.push({
-        id: tag.doc.id,
-        name: tag.doc.name,
-        articleCount: tag.doc.articles.length
+        id: tag.id,
+        name: tag.name,
+        articleCount: tag.articles.length
       });
     });
     next();

@@ -35,6 +35,8 @@ function initRouter() {
   // like if a category was a directory of articles
 
   // article specific statics
+  // index:false means the root of the folder will give 404
+  // more info: https://evanhahn.com/express-dot-static-deep-dive/
   router.use(express.static(conf.app.paths.staticFilesDir + '_' + model.getName(), {index: false}));
 
   /* GET list of posts per category or tag */
@@ -43,6 +45,7 @@ function initRouter() {
       myUtils.generateURL(conf.BLOG_PATHS.blog, conf.BLOG_PATHS.tags, ':tag'),
       myUtils.generateURL(conf.BLOG_PATHS.blog)
     ], function nofavicon(req, res, next) {
+      debugger;
       if (req.params.category === 'favicon.ico') {
         return res.send(404);
       }
@@ -58,8 +61,8 @@ function initRouter() {
       locals.section = 'list';
       locals.filters = {
         category: req.params.category,
-        tag: req.params.tag,
-        search: req.query.search
+        tag: req.params.tag//,
+        //search: req.query.search
       };
       console.log('filters:', locals.filters);
       locals.data = locals.data || {};
@@ -81,24 +84,23 @@ function initRouter() {
 
       model.count(model.col.ARTICLES, filter, (countErr, countResponse) => {
         if (countErr) return next(countErr);
-        let articleCount = countResponse;
 
         model.find(model.col.ARTICLES, filter, queryOpt, (findErr, findResponse) => {
           if (findErr) return next(findErr);
 
-          // TODO: rename posts to articles
-          let articles = locals.data.posts.results = findResponse.map(item => {
-            const doc = item.doc;
-            doc.publishedDate = moment(item.doc.config.publishedDate);
-            doc.image = {exists: false};
-            return doc;
+          findResponse.forEach(item => {
+            item.publishedDate = moment(item.config.publishedDate);
+            item.image = {exists: false};
           });
+
+          // TODO: rename posts to articles
+          let articles = locals.data.posts.results = findResponse;
 
           if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
           else if (req.params.tag) console.log(`got all articles for tag ${req.params.tag}.`);
 
           let pagination = {};
-          pagination.totalArticles = articleCount;//resArticles.total_rows;
+          pagination.totalArticles = countResponse;//resArticles.total_rows;
           pagination.totalPages = Math.ceil(pagination.totalArticles/conf.ARTICLES_PER_PAGE);
           pagination.currentPage = parseInt(curPage);
           pagination.previousPage = pagination.currentPage > 1 ? pagination.currentPage - 1 : null;

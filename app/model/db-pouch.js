@@ -101,7 +101,8 @@ class DBPouch extends DBInterface {
 
     const resCb = (err, res) => {
       if (err) return cb(err);
-      cb(null, res.rows);
+      const ret = res.rows.map(item => item.doc);
+      cb(null, ret);
     }
 
     const opts = {
