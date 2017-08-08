@@ -18,7 +18,8 @@ let cp, cu;
 
 if (conf.CONTENT_SOURCE_TYPE === 'local-git-repo') {
   const CPLocalGitRepo = require('../article-importer/cp-local-git-repo');
-  cp = new CPLocalGitRepo(path.join(__dirname, '../../test/_sample-articles'));
+  //cp = new CPLocalGitRepo(path.join(__dirname, '../../test/_sample-articles'));
+  cp = new CPLocalGitRepo(conf.app.paths.localRepoDir);
   cu = require('../content-updater/local-git-update-task');
 
 } else if (conf.CONTENT_SOURCE_TYPE === 'remote-github-repo') {

@@ -39,10 +39,11 @@ block content
               if data.posts.previous
                 li: a(href='?page=' + data.posts.previous): span.glyphicon.glyphicon-chevron-left
               else
-                li.disabled: a(href='?page=' + 1): span.glyphicon.glyphicon-chevron-left
+                li.disabled: a(href='?page=1'): span.glyphicon.glyphicon-chevron-left
               each p, i in data.posts.pages
                 li(class=data.posts.currentPage == p ? 'active' : null)
-                  a(href='?page=' + (p == '...' ? (i ? data.posts.totalPages : 1) : p ))= p
+                  //-a(href='?page=' + (p == '...' ? (i ? data.posts.totalPages : 1) : p ))= p
+                  a(href='?page=' + p)= p
               if data.posts.next
                 li: a(href='?page=' + data.posts.next): span.glyphicon.glyphicon-chevron-right
               else
