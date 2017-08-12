@@ -1,38 +1,38 @@
 //- showBriefOnly=true means that renderArticle is used to print briefs only for 
 //- the blog view, otherwise will print full post
-mixin renderArticle(showBriefOnly, post)
+mixin renderArticle(showBriefOnly, article)
   article.post-article
     .post
       header
         //- TODO h2: a(href=blogurl + '/post/' + post.slug)= post.title
         if showBriefOnly
-          h2: a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id))= post.config.title
+          h2: a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, article.category.id, article.id))= article.config.title
         else
-          h1= post.config.title
+          h1= article.config.title
         .row
           .article-icons-group1.col-sm-6.col-md-6
-            if post.publishedDate
+            if article.publishedDate
               span.glyphicon.glyphicon-time
-              |  #{post.publishedDate.format('MMMM Do, YYYY')}  &nbsp;&nbsp;
-            if post.config.author
+              |  #{article.publishedDate.format('MMMM Do, YYYY')}  &nbsp;&nbsp;
+            if article.config.author
               span.glyphicon.glyphicon-user
-              |  by #{post.config.author.name}  &nbsp;&nbsp;
-            if post.hits
+              |  by #{article.config.author.name}  &nbsp;&nbsp;
+            if article.hits
               span.glyphicon.glyphicon-cloud-download
-              |  #{post.hits}
+              |  #{article.hits}
           .article-icons-group2.col-sm-6.col-md-6
-            if post.category
+            if article.category
               span.glyphicon.glyphicon-folder-open
               | &nbsp;&nbsp;
-              a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.categories, post.category.id))= post.category.name
+              a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.categories, article.category.id))= article.category.name
               | 
-            if post.tags && post.tags.length
+            if article.tags && article.tags.length
               span.glyphicon.glyphicon-bookmark
               | &nbsp;&nbsp;
-              each tag, i in post.tags
+              each tag, i in article.tags
                 //- TODO a(href=blogurl + '/tags/' + tag.key)= tag.name
                 a(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.tags, tag.id))= tag.name
-                if i < post.tags.length - 1
+                if i < article.tags.length - 1
                   | ,&nbsp;
                 else
                   |
@@ -42,20 +42,20 @@ mixin renderArticle(showBriefOnly, post)
       //- TODO: Make sure brief doesn't have html and it is short and it will become real brief
       //- then we can print first x number of words for the extended and then continue reading...
       .brief
-        if post.image.exists
+        if article.image.exists
           if showBriefOnly
-            img(src=post._.image.fit(160,160)).img.pull-right
+            img(src=article._.image.fit(160,160)).img.pull-right
           else
-            .image-wrap: img(src=data.post._.image.fit(750,450)).img-responsive
-        p.lead!= post.brief
+            .image-wrap: img(src=article._.image.fit(750,450)).img-responsive
+        p.lead!= article.brief
       //- p.lead
       //-   | #{post.content.brief}
-      if post.extended
+      if article.extended
         if showBriefOnly
           //- p.read-more: a(href=blogurl + '/post/' + post.slug) Read more...
-          p.post.text-right
+          p.article.text-right
             //- TODO a.text-right(href=blogurl + '/post/' + post.slug) continue reading...
-            a.text-right(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, post.category.id, post.id)) continue reading...
+            a.text-right(href=myUtils.generateURL(BLOG_PATHS.blog, BLOG_PATHS.posts, article.category.id, article.id)) continue reading...
         else
           p --------------------------------------
-          .post!= post.extended
+          .post!= article.extended

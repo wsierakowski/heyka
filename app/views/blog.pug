@@ -19,35 +19,35 @@ block content
         h2= cat || tag || search || 'Latest Posts'
         if data.category && data.category.description
           span= data.category.description
-        if data.posts.results.length
-          if data.posts.totalPages > 1
+        if data.articles.length
+          if data.pagination.totalPages > 1
             h5.text-weight-normal Showing 
-              strong #{data.posts.first}
+              strong #{data.pagination.firstArticleIdxInCurPage}
               |  to 
-              strong #{data.posts.last}
+              strong #{data.pagination.lastArticleIdxInCurPage}
               |  of 
-              strong #{data.posts.total}
+              strong #{data.pagination.totalArticles}
               |  posts.
           else
-            h4.text-weight-normal Showing #{myUtils.pluralify(data.posts.results.length, '* post')}.
+            h4.text-weight-normal Showing #{myUtils.pluralify(data.articles.length, '* article')}.
           .blog
-            each post in data.posts.results
-              +renderArticle(true, post)
+            each article in data.articles
+              +renderArticle(true, article)
           
-          if data.posts.totalPages > 1
+          if data.pagination.totalPages > 1
             ul.pagination
-              if data.posts.previous
-                li: a(href='?page=' + data.posts.previous): span.glyphicon.glyphicon-chevron-left
+              if data.pagination.previousPage
+                li: a(href='?page=' + data.pagination.previousPage): span.glyphicon.glyphicon-chevron-left
               else
                 li.disabled: a(href='?page=1'): span.glyphicon.glyphicon-chevron-left
-              each p, i in data.posts.pages
-                li(class=data.posts.currentPage == p ? 'active' : null)
+              each p, i in data.pagination.pagesList
+                li(class=data.pagination.currentPage == p ? 'active' : null)
                   //-a(href='?page=' + (p == '...' ? (i ? data.posts.totalPages : 1) : p ))= p
                   a(href='?page=' + p)= p
-              if data.posts.next
-                li: a(href='?page=' + data.posts.next): span.glyphicon.glyphicon-chevron-right
+              if data.pagination.nextPage
+                li: a(href='?page=' + data.pagination.nextPage): span.glyphicon.glyphicon-chevron-right
               else
-                li.disabled: a(href='?page=' + data.posts.totalPages): span.entypo.glyphicon.glyphicon-chevron-right
+                li.disabled: a(href='?page=' + data.pagination.totalPages): span.entypo.glyphicon.glyphicon-chevron-right
         else
           if data.category
             h3.text-muted There are no posts in the category #{data.category.name}.

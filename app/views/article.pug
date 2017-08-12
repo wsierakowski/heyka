@@ -6,10 +6,10 @@ block content
 		.col-sm-8.col-md-9
 			ul.pager: li.previous: a(href=myUtils.generateURL(BLOG_PATHS.blog)) &lt; Back to the articles list
 			//- hr
-			if !data.post
-				h2 Invalid Post.
+			if !data.article
+				h2 Article not found.
 			else
-				+renderArticle(false, data.post)
+				+renderArticle(false, data.article)
 			ul.pager: li.previous: a(href=myUtils.generateURL(BLOG_PATHS.blog)) &lt; Back to the articles list
 		.col-sm-4.col-md-3
 			include includes/side-panels

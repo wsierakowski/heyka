@@ -56,71 +56,50 @@ function initRouter() {
     middleware.fetchLatestPosts,
     middleware.fetchPopularPosts,
     function renderArticleList(req, res, next) {
-      let locals = res.locals;
-      // TODO: Why do I need that?
-      locals.section = 'list';
-      locals.filters = {
-        category: req.params.category,
-        tag: req.params.tag//,
-        //search: req.query.search
-      };
-      console.log('filters:', locals.filters);
+      const locals = res.locals;
+
       locals.data = locals.data || {};
-      locals.data.posts = {};
-      locals.data.posts.results = [];
-      locals.data.posts.totalPages = 1;
+      locals.data.articles = [];
+      const pagination = locals.data.pagination = {};
+      pagination.totalPages = 1;
+      pagination.currentPage = parseInt(req.query.page || 1);
 
-      let curPage = req.query.page || 1;
-
-      let filter = {};
-      if (req.params.category) filter.category = req.params.category;
-      else if (req.params.tag) filter.tag = req.params.tag;
+      let dbFilter = locals.filters = {};
+      if (req.params.category) dbFilter.category = req.params.category;
+      else if (req.params.tag) dbFilter.tag = req.params.tag;
 
       let queryOpt = {
-        skip: (curPage - 1) * conf.ARTICLES_PER_PAGE,
+        skip: (pagination.currentPage - 1) * conf.ARTICLES_PER_PAGE,
         limit: conf.ARTICLES_PER_PAGE,
         direction: -1
       };
 
-      model.count(model.col.ARTICLES, filter, (countErr, countResponse) => {
+      model.count(model.col.ARTICLES, dbFilter, (countErr, countResponse) => {
         if (countErr) return next(countErr);
 
-        model.find(model.col.ARTICLES, filter, queryOpt, (findErr, findResponse) => {
+        model.find(model.col.ARTICLES, dbFilter, queryOpt, (findErr, findResponse) => {
           if (findErr) return next(findErr);
 
-          findResponse.forEach(item => {
+          locals.data.articles = findResponse.map(item => {
             item.publishedDate = moment(item.config.publishedDate);
             item.image = {exists: false};
+            return item;
           });
 
-          // TODO: rename posts to articles
-          let articles = locals.data.posts.results = findResponse;
+          // if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
+          // else if (req.params.tag) console.log(`got all articles for tag ${req.params.tag}.`);
 
-          if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
-          else if (req.params.tag) console.log(`got all articles for tag ${req.params.tag}.`);
-
-          let pagination = {};
           pagination.totalArticles = countResponse;//resArticles.total_rows;
           pagination.totalPages = Math.ceil(pagination.totalArticles/conf.ARTICLES_PER_PAGE);
-          pagination.currentPage = parseInt(curPage);
           pagination.previousPage = pagination.currentPage > 1 ? pagination.currentPage - 1 : null;
           pagination.nextPage = pagination.currentPage < pagination.totalPages ? pagination.currentPage + 1 : null;
           pagination.pagesList = Array.from(new Array(pagination.totalPages), (v,i) => i + 1);
 
           pagination.firstArticleIdxInCurPage = (pagination.currentPage - 1) * conf.ARTICLES_PER_PAGE + 1;
-          pagination.lastArticleIdxInCurPage = pagination.firstArticleIdxInCurPage + articles.length - 1;
+          pagination.lastArticleIdxInCurPage = pagination.firstArticleIdxInCurPage + locals.data.articles.length - 1;
 
-          console.log('===> pagination', pagination);
+          //console.log('===> pagination', pagination);
 
-          // TODO: update views to use the pagination object
-          locals.data.posts.first = pagination.firstArticleIdxInCurPage;
-          locals.data.posts.last = pagination.lastArticleIdxInCurPage;
-          locals.data.posts.total = pagination.totalArticles;
-          locals.data.posts.totalPages = pagination.totalPages;
-          locals.data.posts.currentPage = pagination.currentPage;
-          locals.data.posts.previous = pagination.previousPage;
-          locals.data.posts.next = pagination.nextPage;
-          locals.data.posts.pages = pagination.pagesList;
           // get the category details
           if (req.params.category) {
             model.findOne(model.col.CATEGORIES, req.params.category, (catErr, catDoc) => {
@@ -167,21 +146,21 @@ function initRouter() {
         post: req.params.post
       };
       locals.data = locals.data || {};
-      locals.data.posts = [];
 
-      model.findOne(model.col.ARTICLES, req.params.post, (articleErr, articleDoc) => {
+      model.findOne(model.col.ARTICLES, req.params.post, (articleErr, article) => {
         if (articleErr) return next(articleErr);
 
+        locals.data.article = article;
         // TODO create utility to post-process articles before sending them to render
-        articleDoc.publishedDate = moment(articleDoc.publishedDate);
-        articleDoc.image = {exists: false};
-        locals.data.post = articleDoc;
+        article.publishedDate = moment(article.publishedDate);
+        article.image = {exists: false};
+
         res.render('article', (err, html) => {
           if (err) return next(err);
 
           // TODO make it a module
           // get markdown tables display nicely with bootstrap
-          if (articleDoc.extendedType === "md") {
+          if (article.extendedType === "md") {
             const $ = cheerio.load(html);
             if (!$('table').attr('class')) {
               $('table').addClass('table table-condensed');
