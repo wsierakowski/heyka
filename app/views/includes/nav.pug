@@ -10,7 +10,7 @@ header.navbar.navbar-inverse.navbar-fixed-top.bs-docs-nav(role="banner")
       a.logo-link(href=myUtils.generateURL(BLOG_PATHS.blog))
         img(src=myUtils.generateURL(BLOG_PATHS.blog, "images/sigman.pl.png"), alt=title)
     nav.collapse.navbar-collapse.bs-navbar-collapse(role="navigation")
-      form.navbar-form.navbar-right(role="search", method="get", action=myUtils.generateURL(BLOG_PATHS.blog))
+      //- form.navbar-form.navbar-right(role="search", method="get", action=myUtils.generateURL(BLOG_PATHS.blog))
         .form-group
           input(type="text", name="search" class="form-control input-sm", placeholder="Search")
         button(type="submit", class="btn btn-default btn-sm") Search
