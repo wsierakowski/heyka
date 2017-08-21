@@ -80,10 +80,10 @@ function initRouter() {
         model.find(model.col.ARTICLES, dbFilter, queryOpt, (findErr, findResponse) => {
           if (findErr) return next(findErr);
 
-          locals.data.articles = findResponse.map(item => {
-            item.publishedDate = moment(item.config.publishedDate);
-            item.image = {exists: false};
-            return item;
+          locals.data.articles = findResponse.map(article => {
+            article.publishedDate = moment(article.config.publishedDate);
+            article.image = {exists: false};
+            return article;
           });
 
           // if (req.params.category) console.log(`got all articles for category ${req.params.category}.`);
@@ -152,7 +152,7 @@ function initRouter() {
 
         locals.data.article = article;
         // TODO create utility to post-process articles before sending them to render
-        article.publishedDate = moment(article.publishedDate);
+        article.publishedDate = moment(article.config.publishedDate);
         article.image = {exists: false};
 
         res.render('article', (err, html) => {

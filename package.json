@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "WEBHOOK_SECRET=fake-secret node ./app/bin/boot-app",
+    "start2": "WEBHOOK_SECRET=fake-secret node ./app/bin/boot-app",
+    "start": "WEBHOOK_SECRET=fake-secret GITHUB_TOKEN=b8f97968c6c75019ba726f406444228272d0017e node ./app/bin/boot-app",
     "test": "node test/article-importer/cp-local-git-repo.test.js"
   },
   "dependencies": {
