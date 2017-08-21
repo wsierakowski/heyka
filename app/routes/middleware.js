@@ -102,28 +102,26 @@ exports.fetchTags = function(req, res, next) {
   });
 };
 
-// Load the posts
 exports.fetchLatestPosts = function(req, res, next) {
   var locals = res.locals;
-  // fetch latest posts (where state=published, limit 5, sort -publishDate)
-  locals.data.latestPosts = [{
-    id: 'some-random-latest-article-post',
-    title: 'some random latest article post',
-    category: {id: 'tips'}
-  }];
-  next();
-  // var locals = res.locals,
-  //   q = keystone.list('Post').model
-  //   .find()
-  //   .where('state', 'published')
-  //   .limit(5)
-  //   .sort('-publishedDate')
-  //   .select('slug title');
-  //
-  // q.exec(function(err, results) {
-  //   locals.data.latestPosts = results;
-  //   next(err);
-  // });
+
+  let queryOpt = {
+    skip: 0,
+    limit: 5,
+    direction: -1
+  };
+  model.find(model.col.ARTICLES, {}, queryOpt, (findErr, findResponse) => {
+    if (findErr) return next(findErr);
+    locals.data.latestPosts = findResponse.map(article => {
+      return {
+        id: article._id,
+        title: article.config.title,
+        category: article.category
+      };
+    });
+    next();
+  });
+
 };
 
 // Load the posts
